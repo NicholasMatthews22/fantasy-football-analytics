@@ -9,6 +9,9 @@ from .config import CURRENT_SEASON, DB_PATH, FIRST_SEASON, POSITIONS, RAW_DIR
 STATS_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
              "stats_player/stats_player_week_{season}.parquet")
 GAMES_URL = "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv"
+INJURY_URL = ("https://github.com/nflverse/nflverse-data/releases/download/"
+              "injuries/injuries_{season}.parquet")
+TEAMS_URL = "https://raw.githubusercontent.com/nflverse/nflfastR-data/master/teams_colors_logos.csv"
 
 KEEP_COLS = [
     "player_id", "player_display_name", "position", "headshot_url", "season", "week",
@@ -38,6 +41,12 @@ def download_raw(refresh_current=True):
         refresh = refresh_current and season == CURRENT_SEASON
         _download(STATS_URL.format(season=season), RAW_DIR / f"stats_player_week_{season}.parquet", refresh)
     _download(GAMES_URL, RAW_DIR / "games.csv", refresh_current)
+    _download(TEAMS_URL, RAW_DIR / "teams.csv", False)
+    try:
+        _download(INJURY_URL.format(season=CURRENT_SEASON),
+                  RAW_DIR / f"injuries_{CURRENT_SEASON}.parquet", refresh_current)
+    except Exception as e:  # injury file can lag at the very start of a season
+        print(f"  no injury report yet ({e})")
 
 
 def load_player_weeks():
@@ -69,6 +78,25 @@ def load_games():
               "home_score", "away_score", "spread_line", "total_line"]].copy()
 
 
+def load_teams():
+    t = pd.read_csv(RAW_DIR / "teams.csv")
+    return t[["team_abbr", "team_name", "team_nick", "team_color", "team_color2",
+              "team_logo_espn"]].rename(columns={"team_abbr": "team", "team_logo_espn": "logo"})
+
+
+def load_injuries():
+    """Latest game-status designation for each player (Out, Doubtful, Questionable)."""
+    path = RAW_DIR / f"injuries_{CURRENT_SEASON}.parquet"
+    if not path.exists():
+        return pd.DataFrame(columns=["player_id", "week", "status", "injury", "practice"])
+    i = pd.read_parquet(path)
+    i = i[(i["season_type"] == "REG") & i["position"].isin(POSITIONS)]
+    i = i[i["week"] == i["week"].max()]
+    i = i.rename(columns={"gsis_id": "player_id", "report_status": "status",
+                          "report_primary_injury": "injury", "practice_status": "practice"})
+    return i[["player_id", "week", "status", "injury", "practice"]].drop_duplicates("player_id", keep="last")
+
+
 def build_database(refresh_current=True):
     download_raw(refresh_current)
     pw = load_player_weeks()
@@ -77,6 +105,8 @@ def build_database(refresh_current=True):
     with sqlite3.connect(DB_PATH) as con:
         pw.to_sql("player_weeks", con, if_exists="replace", index=False)
         games.to_sql("games", con, if_exists="replace", index=False)
+        load_teams().to_sql("teams", con, if_exists="replace", index=False)
+        load_injuries().to_sql("injuries", con, if_exists="replace", index=False)
         con.execute("CREATE INDEX IF NOT EXISTS ix_pw_player ON player_weeks(player_id, season, week)")
     print(f"  player_weeks: {len(pw):,} rows | games: {len(games):,} rows")
     return pw, games

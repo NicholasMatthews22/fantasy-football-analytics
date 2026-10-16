@@ -31,6 +31,20 @@ def main(offline=False):
             "home", "implied_total", "spread", "def_factor", "ewm_ppr", "proj", "floor", "ceiling"]
     proj = fut[cols].round(2)
     proj["last_completed_week"] = last_week
+
+    # Injury report: only applies if it's for the upcoming week (reports come out Wed-Fri).
+    inj = data.read_table("injuries")
+    next_week = int(proj["week"].min())
+    proj["status"] = None
+    if len(inj) and int(inj["week"].max()) == next_week:
+        st = inj.dropna(subset=["status"]).set_index("player_id")["status"]
+        m = proj["week"] == next_week
+        proj.loc[m, "status"] = proj.loc[m, "player_id"].map(st)
+        out = m & (proj["status"] == "Out")
+        proj.loc[out, ["proj", "floor", "ceiling"]] = 0.0
+        print(f"  Week {next_week} injury report applied: {int(out.sum())} players ruled out")
+    else:
+        print(f"  Week {next_week} injury report not out yet")
     data.write_table(proj, "projections")
     print(f"  {proj['player_id'].nunique()} players, weeks {proj['week'].min()}-{proj['week'].max()}")
 
