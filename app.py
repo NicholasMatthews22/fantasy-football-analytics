@@ -27,12 +27,12 @@ DEFAULT_SLOTS = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"]
 STD_SCORING = {"rec": 1.0, "rec_yd": 0.1, "rec_td": 6, "rush_yd": 0.1, "rush_td": 6, "pass_yd": 0.04,
                "pass_td": 4, "pass_int": -1, "bonus_rec_te": 0}
 SCORING_PRESETS = {"Full PPR": {}, "Half PPR": {"rec": 0.5}, "Standard (no PPR)": {"rec": 0.0}}
-ACCENT, MUTED = "#00d4b4", "#8b93a7"
+ACCENT, MUTED = "#9b6bff", "#8b93a7"
 
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap');
-:root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #00d4b4;
+:root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #9b6bff;
   --qb: #ff4f81; --rb: #22d3b6; --wr: #58b6ff; --te: #ffb35c; }
 .block-container { padding-top: 2rem !important; max-width: 1280px; }
 h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"], .num {
@@ -43,16 +43,41 @@ h3 { font-weight: 700 !important; }
 .stTabs [data-baseweb="tab-list"] { gap: 4px; overflow-x: auto; scrollbar-width: none; }
 .stTabs button { border-radius: 999px !important; padding: 6px 14px !important; background: var(--surface) !important; }
 .stTabs button[aria-selected="true"] { background: var(--accent) !important; }
-.stTabs button[aria-selected="true"] p { color: #0d1a18 !important; }
+.stTabs button[aria-selected="true"] p { color: #fff !important; }
 .stTabs button p { font-size: .9rem !important; font-weight: 600; white-space: nowrap; }
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] { display: none; }
 [data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
 [data-testid="stMetricValue"] { font-weight: 700; }
 .sub { color: var(--muted); font-size: .9rem; margin-top: -6px; }
 /* hide Streamlit's own header buttons and badges */
-header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
-[data-testid="stStatusWidget"], .stAppDeployButton, [class*="viewerBadge"], [data-testid="manage-app-button"] {
+header[data-testid="stHeader"] { background: transparent !important; height: 2.6rem; }
+[data-testid="stToolbarActions"], [data-testid="stMainMenu"], [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+[data-testid="stAppDeployButton"], .stAppDeployButton, [class*="viewerBadge"], [data-testid="manage-app-button"] {
   display: none !important; }
+
+/* sidebar menu */
+section[data-testid="stSidebar"] { background: #141824 !important; border-right: 1px solid var(--line); }
+section[data-testid="stSidebar"] .brand { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.25rem;
+  line-height: 1.15; margin: 0 0 4px; }
+section[data-testid="stSidebar"] .brand span { color: var(--accent); }
+section[data-testid="stSidebar"] .side-sub { color: var(--muted); font-size: .78rem; margin-bottom: 14px; }
+section[data-testid="stSidebar"] [data-testid="stRadio"], section[data-testid="stSidebar"] [data-testid="stRadio"] > div,
+section[data-testid="stSidebar"] [data-testid="stRadio"] label + div { width: 100% !important; }
+section[data-testid="stSidebar"] [role="radiogroup"] { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 4px; width: 100% !important; }
+section[data-testid="stSidebar"] [data-testid="stElementContainer"]:has([data-testid="stRadio"]),
+section[data-testid="stSidebar"] [data-testid="stRadio"] * { max-width: none !important; }
+section[data-testid="stSidebar"] [data-testid="stElementContainer"]:has([data-testid="stRadio"]) { width: 100% !important; }
+section[data-testid="stSidebar"] [role="radiogroup"] > * { width: 100% !important; max-width: none !important; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] { width: 100% !important; max-width: none !important;
+  display: flex !important; box-sizing: border-box; padding: 10px 14px; border-radius: 10px; margin: 0; cursor: pointer;
+  transition: background .15s; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] > div { width: 100%; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child { display: none !important; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"]:hover { background: var(--surface2); }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] { background: var(--accent); }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p { color: #fff !important; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] p { font-weight: 600; font-size: .95rem; }
+.b-Final { background: #3a4256; color: #e8ebf2; }
 span[data-baseweb="tag"], [data-testid="stMultiSelectTagsContainer"] > div {
   background: #232a3a !important; border: 1px solid var(--accent) !important; }
 [data-testid="stMultiSelectTagsContainer"] > div, [data-testid="stMultiSelectTagsContainer"] > div * { color: #e8ebf2 !important; }
@@ -84,21 +109,21 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .gl-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; min-width: 0;
   background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; }
 .gl-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--tc); }
-.gl-card .hs, .avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: top;
+.gl-card .hs, .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: top;
   background: var(--surface2); flex: none; }
 .gl-card .logo { width: 44px; height: 44px; flex: none; }
 .gl-txt { min-width: 0; }
 .gl-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); font-weight: 600; }
 .gl-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gl-meta { font-size: .8rem; color: var(--muted); }
-.gl-pts { margin-left: auto; font-family: 'Poppins', sans-serif; font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.gl-pts { margin-left: auto; font-family: 'Poppins', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .gl-pts small { display: block; font-size: .65rem; font-weight: 500; color: var(--muted); text-align: right; }
 .note { font-size: .85rem; color: #cfd5e3; margin: 0 0 8px; }
 
 /* start/sit */
 .ss-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; }
 .ss-card { border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
-.ss-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px rgba(0,212,180,.15); }
+.ss-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px rgba(155,107,255,.15); }
 .ss-band { background: var(--tc); color: #fff; display: flex; align-items: center; gap: 8px; padding: 7px 12px;
   font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
 .ss-band img { width: 24px; height: 24px; background: rgba(255,255,255,.92); border-radius: 50%; padding: 2px; }
@@ -114,7 +139,7 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .range-dot { position: absolute; top: -5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
   background: var(--accent); border: 3px solid #10131c; }
 .range-lbl { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); }
-.pick { position: absolute; top: 44px; right: 10px; background: var(--accent); color: #0d1a18; font-weight: 800;
+.pick { position: absolute; top: 44px; right: 10px; background: var(--accent); color: #fff; font-weight: 800;
   font-size: .7rem; padding: 2px 8px; border-radius: 6px; letter-spacing: .5px; }
 
 /* profile */
@@ -131,17 +156,32 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
 
 /* lineup */
-.lu { display: grid; gap: 8px; margin: 6px 0 14px; }
-.lu-row { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 14px;
-  background: var(--surface); border: 1px solid var(--line); }
+.lu { display: grid; gap: 4px; margin: 6px 0 14px; }
+.lu-row { display: flex; align-items: center; gap: 10px; padding: 5px 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); min-height: 48px; }
 .lu-row.empty { opacity: .6; }
-.lu-row .slot { width: 52px; flex: none; }
-.lu-row .hs { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); flex: none; }
-.lu-row .logo { width: 26px; height: 26px; flex: none; }
-.lu-name { font-weight: 700; min-width: 0; }
-.lu-name small { display: block; font-weight: 400; color: var(--muted); }
-.lu-pts { margin-left: auto; text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 700; line-height: 1; }
-.lu-pts small { display: block; font-size: .66rem; font-weight: 500; color: var(--muted); }
+.lu-row .slot { width: 46px; flex: none; }
+.lu-row .hs { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); flex: none; }
+.lu-row .logo { width: 22px; height: 22px; flex: none; }
+.lu-name { font-weight: 700; font-size: .92rem; min-width: 0; line-height: 1.2; }
+.lu-name small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
+.lu-pts { margin-left: auto; text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.lu-pts small { display: block; font-size: .62rem; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+/* projection cards */
+.pc { display: grid; gap: 6px; }
+.pc-row { display: grid; grid-template-columns: 44px 46px minmax(0, 1fr) minmax(0, 150px) 86px; align-items: center;
+  gap: 12px; padding: 8px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.pc-rank { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--muted); font-size: .85rem; }
+.pc-row .hs { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
+.pc-main { min-width: 0; }
+.pc-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-meta { color: var(--muted); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-meta .good { color: var(--rb); font-weight: 700; } .pc-meta .tough { color: var(--qb); font-weight: 700; }
+.pc-range .range { margin: 4px 0 3px; }
+.pc-range .range-lbl { font-size: .66rem; }
+.pc-pts { text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
+.pc-pts small { display: block; font-size: .62rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
 /* matchup */
 .mu { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; background: var(--surface);
@@ -180,7 +220,11 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   .pf-logo { display: none; }
   .pf-stats { gap: 14px; }
   .pf-stats div { font-size: 1.1rem; }
-  .lu-row { padding: 8px 10px; gap: 8px; }
+  .lu-row { padding: 5px 8px; gap: 7px; }
+  .pc-row { grid-template-columns: 30px 38px minmax(0, 1fr) 62px; gap: 8px; padding: 7px 10px; }
+  .pc-row .hs { width: 38px; height: 38px; }
+  .pc-range { display: none; }
+  .pc-pts { font-size: 1.2rem; }
   .lu-row .logo { display: none; }
   .lu-row .slot { width: 40px; }
   .lu-pts { font-size: 1.25rem; }
@@ -188,7 +232,7 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 </style>
 """, unsafe_allow_html=True)
 
-STATUS_STYLE = {"Out": "background-color:#ff4d4d;color:white", "Doubtful": "background-color:#ff8a3d;color:white",
+STATUS_STYLE = {"Final": "background-color:#3a4256;color:#e8ebf2", "Out": "background-color:#ff4d4d;color:white", "Doubtful": "background-color:#ff8a3d;color:white",
                 "Questionable": "background-color:#ffd24d;color:#222"}
 POS_STYLE = {p: f"color:{c};font-weight:800" for p, c in POS_COLORS.items()}
 
@@ -457,13 +501,19 @@ def rescore(df, settings):
     return out
 
 
+# ---------- sidebar ----------
+with st.sidebar:
+    st.markdown('<div class="brand">Fantasy Football <span>Analytics</span></div>'
+                f'<div class="side-sub">Week {next_week} · stats through Week {last_week}</div>', unsafe_allow_html=True)
+    nav_box = st.container()
+    st.divider()
+
 # ---------- header ----------
-h1, h2 = st.columns([3, 1], vertical_alignment="bottom")
-h1.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
+st.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
 score_opts = (["My league"] if league() else []) + list(SCORING_PRESETS)
 if st.session_state.get("scoring") not in score_opts:
     st.session_state["scoring"] = score_opts[0]
-scoring_name = h2.selectbox("Scoring", score_opts, key="scoring",
+scoring_name = st.sidebar.selectbox("Scoring", score_opts, key="scoring",
                             help="Projections are converted to this scoring. 'My league' uses your Sleeper settings.")
 proj = rescore(proj, league()["scoring"] if scoring_name == "My league" else SCORING_PRESETS[scoring_name])
 score_label = f"{league()['name']} scoring" if scoring_name == "My league" else scoring_name
@@ -472,13 +522,13 @@ if league():
     chips.append(f"Connected: <b>{league()['name']}</b>")
 html(f'<div>{"".join(f"<span class=chip>{c}</span>" for c in chips)}</div>')
 
-wk = proj[(proj["week"] == next_week) & (proj["status"] != "Out")]
+wk = proj[(proj["week"] == next_week) & ~proj["status"].isin(["Out", "Final"])]
 cards = []
 for pos_ in ["QB", "RB", "WR", "TE"]:
     r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
     cards.append(f"""<div class="gl-card" style="--tc:{POS_COLORS[pos_]}">
       <img class="hs" src="{r['headshot_url']}"><div class="gl-txt">
-      <div class="gl-lbl">{pill(pos_)} Top · Wk {next_week}</div><div class="gl-name">{r['name']}</div>
+      <div class="gl-lbl">{pill(pos_)} Top</div><div class="gl-name">{r['name']}</div>
       <div class="gl-meta">{r['team']} {r['matchup']} {badge(r['status'])}</div></div>
       <div class="gl-pts">{r['proj']:.1f}<small>proj</small></div></div>""")
 html(f'<div class="gl-grid">{"".join(cards)}</div>')
@@ -554,7 +604,7 @@ def render_profile(pid, key):
             x=fut["week"], y=fut["proj"], name="Projected", mode="markers",
             marker=dict(color=ACCENT, size=10, symbol="diamond"),
             error_y=dict(type="data", symmetric=False, array=fut["ceiling"] - fut["proj"],
-                         arrayminus=fut["proj"] - fut["floor"], color="rgba(0,212,180,.25)", thickness=6, width=0),
+                         arrayminus=fut["proj"] - fut["floor"], color="rgba(155,107,255,.25)", thickness=6, width=0),
             customdata=fut[["matchup", "floor", "ceiling"]],
             hovertemplate="Week %{x} %{customdata[0]}: %{y:.1f} proj (%{customdata[1]:.1f} to "
                           "%{customdata[2]:.1f})<extra></extra>"))
@@ -619,7 +669,7 @@ def render_kdst_profile(pid, info, key):
     fig.add_trace(go.Scatter(x=fut["week"], y=fut["proj"], name="Projected", mode="markers",
                              marker=dict(color=ACCENT, size=10, symbol="diamond"),
                              error_y=dict(type="data", symmetric=False, array=fut["ceiling"] - fut["proj"],
-                                          arrayminus=fut["proj"] - fut["floor"], color="rgba(0,212,180,.25)",
+                                          arrayminus=fut["proj"] - fut["floor"], color="rgba(155,107,255,.25)",
                                           thickness=6, width=0)))
     fig.update_layout(title="Season so far and projections ahead", yaxis_title="Fantasy points",
                       xaxis=dict(dtick=1, title="Week", range=[0.4, 18.6]))
@@ -670,9 +720,24 @@ def empty_html(slot, text="Empty"):
     return f'<div class="lu-row empty"><span class="slot">{pill(slot)}</span><span>{text}</span></div>'
 
 
-def lineup_rows(lineup):
-    return '<div class="lu">' + "".join(row_html(sl, r) if r is not None else empty_html(sl, "No eligible player this week")
-                                        for sl, r in lineup) + "</div>"
+def lineup_rows(lineup, unavailable=None):
+    """unavailable: {position: [names]} of rostered players with no game (bye) or ruled out."""
+    unavailable = {k: list(v) for k, v in (unavailable or {}).items()}
+    parts = []
+    for sl, r in lineup:
+        if r is not None:
+            parts.append(row_html(sl, r))
+            continue
+        names_ = [n for p_ in SLOT_ELIG[sl] for n in unavailable.get(p_, [])]
+        if names_:
+            n = names_[0]
+            for p_ in SLOT_ELIG[sl]:
+                if n in unavailable.get(p_, []):
+                    unavailable[p_].remove(n)
+            parts.append(empty_html(sl, f"{n} · no game this week"))
+        else:
+            parts.append(empty_html(sl, "Nobody on your roster for this spot"))
+    return '<div class="lu">' + "".join(parts) + "</div>"
 
 
 def win_probability(a, b):
@@ -827,7 +892,7 @@ def view_trade_finder():
 # ---------- tabs ----------
 
 def view_projections():
-    intro("Weekly projections", "Every player's projected points for the week, with a floor (a bad day) and a ceiling (a great day).", "Pick a week and positions, or search a name. Tap any row to open that player's profile.")
+    intro("Weekly projections", "Every player's projected points for the week, with a floor (a bad day) and a ceiling (a great day).", "Pick a week and positions, or search a name. Bars show each player's floor-to-ceiling range.")
     c1, c2, c3 = st.columns([1, 2, 2])
     week = c1.selectbox("Week", sorted(proj["week"].unique()), key="pw")
     with c2:
@@ -838,33 +903,36 @@ def view_projections():
         t = t[t["name"].str.contains(search, case=False)]
     t = t.sort_values("proj", ascending=False).reset_index(drop=True)
     t["rank"] = t["position"] + (t.groupby("position").cumcount() + 1).astype(str)
-    show = t[["headshot_url", "rank", "name", "position", "status", "matchup", "matchup_grade", "weather",
-              "implied_total", "floor", "proj", "ceiling"]]
-    styled = (show.style.map(lambda s: STATUS_STYLE.get(s, ""), subset=["status"])
-              .map(lambda p: POS_STYLE.get(p, ""), subset=["position"])
-              .map(lambda g: {"Good": "color:#22d3b6;font-weight:700", "Tough": "color:#ff4f81;font-weight:700"}.get(g, ""),
-                   subset=["matchup_grade"])
-              .map(lambda w: "color:#7aa7ff;font-weight:700" if "mph" in w and int(w.split("·")[1].split()[0]) >= 15 else "",
-                   subset=["weather"]))
-    st.caption("Tap a row to open that player's profile below the table.")
-    sel = st.dataframe(
-        styled, hide_index=True, width="stretch", height=540, on_select="rerun",
-        selection_mode="single-row", key="proj_table",
-        column_config={
-            "headshot_url": st.column_config.ImageColumn("", width="small"),
-            "rank": "Rank", "name": "Player", "position": "Pos", "status": "Status", "matchup": "Opp",
-            "matchup_grade": "Matchup", "weather": "Weather",
-            "implied_total": st.column_config.NumberColumn("Team implied", format="%.1f",
-                                                           help="Points Vegas expects this team to score"),
-            "floor": st.column_config.NumberColumn("Floor", format="%.1f", help="15th percentile outcome"),
-            "proj": st.column_config.ProgressColumn("Projection", format="%.1f", min_value=0,
-                                                    max_value=float(proj["proj"].max()), color="#00d4b4"),
-            "ceiling": st.column_config.NumberColumn("Ceiling", format="%.1f", help="85th percentile outcome"),
-        })
-    rows = sel.selection.rows if sel else []
-    if rows:
+    if t.empty:
+        st.info("No players match those filters.")
+        return
+    pick = st.selectbox("Open a player's profile", ["(choose a player)"] + t["label"].tolist(), key="pc_pick")
+    if pick != "(choose a player)":
+        render_profile(id_by_label[pick], "proj_pf")
         st.divider()
-        render_profile(t.iloc[rows[0]]["player_id"], "proj_pf")
+    n_show = st.session_state.get("pc_n", 40)
+    scale = max(float(t["ceiling"].max()), 1.0)
+    cards = []
+    for _, r in t.head(n_show).iterrows():
+        grade = {"Good": '<span class="good">Good</span>', "Tough": '<span class="tough">Tough</span>'}.get(
+            r["matchup_grade"], r["matchup_grade"])
+        wx = f" · {r['weather']}" if r["weather"] else ""
+        final = r["status"] == "Final"
+        f_, p_, c_ = r["floor"] / scale * 100, r["proj"] / scale * 100, r["ceiling"] / scale * 100
+        rng = ("" if final else f'''<div class="pc-range"><div class="range"><div class="range-bar" style="left:{f_}%;width:{c_ - f_}%"></div>
+              <div class="range-dot" style="left:{p_}%"></div></div>
+              <div class="range-lbl"><span>{r['floor']:.1f}</span><span>{r['ceiling']:.1f}</span></div></div>''')
+        cards.append(f'''<div class="pc-row"><div class="pc-rank">{r['rank']}</div>
+          <img class="hs" src="{r['headshot_url']}">
+          <div class="pc-main"><div class="pc-name">{r['name']} {badge(r['status'])}{wind_badge(r)}</div>
+            <div class="pc-meta">{pill(r['position'])} {r['team']} {r['matchup']} · {grade}{wx}</div></div>
+          {rng if not final else '<div class="pc-range"></div>'}
+          <div class="pc-pts">{r['proj']:.1f}<small>{'final' if final else 'proj'}</small></div></div>''')
+    html('<div class="pc">' + "".join(cards) + "</div>")
+    if len(t) > n_show:
+        if st.button(f"Show more ({len(t) - n_show} left)", width="stretch"):
+            st.session_state["pc_n"] = n_show + 40
+            st.rerun()
 
 def view_rankings():
     intro("Rest-of-season rankings", "Every player ranked by value: projected points above a replacement-level starter at his position.", "Set your league size and the weeks you care about. Connect Sleeper in My Team to see who is available.")
@@ -898,7 +966,7 @@ def view_rankings():
         "ros": st.column_config.NumberColumn("ROS points", format="%.1f"),
         "value": st.column_config.ProgressColumn("Value", format="%.1f", min_value=0,
                                                  max_value=float(max(rk["value"].max(), 1)) if len(rk) else 1.0,
-                                                 color="#00d4b4",
+                                                 color="#9b6bff",
                                                  help="Rest-of-season points above a replacement-level starter"),
         "owner": "League status",
     })
@@ -939,7 +1007,7 @@ def view_team():
             extra = f" {lg['unmatched']} roster spots (IDP or brand-new players) aren't projected here." \
                 if lg["unmatched"] else ""
             st.success(f"Connected to **{lg['name']}** ({lg['teams']} teams).{extra}")
-            st.caption("Projections now use your league's scoring and lineup slots. Change it with the Scoring menu at the top.")
+            st.caption("Projections now use your league's scoring and lineup slots. Change it with the Scoring menu in the sidebar.")
 
     init_from_url("team", "team")
     c1, c2 = st.columns([4, 1])
@@ -973,7 +1041,12 @@ def view_team():
         b.metric("Floor", f"{sum(r['floor'] for _, r in lineup if r is not None):.1f}")
         c.metric("Ceiling", f"{sum(r['ceiling'] for _, r in lineup if r is not None):.1f}")
 
-        html(lineup_rows(lineup))
+        unavailable = {}
+        for i in ids:
+            if i not in set(avail["player_id"]) and i in label_by_id:
+                pos_i = players.loc[players["player_id"] == i, "position"].iloc[0]
+                unavailable.setdefault(pos_i, []).append(label_by_id[i].split(" (")[0])
+        html(lineup_rows(lineup, unavailable))
 
         calls = []
         for slot, r in lineup:
@@ -1136,7 +1209,7 @@ def view_breakouts():
             "signal": "Signal",
             "breakout_score": st.column_config.ProgressColumn("Breakout score", format="%.1f", min_value=0,
                                                               max_value=float(max(breakouts["breakout_score"].max(), 1)),
-                                                              color="#00d4b4"),
+                                                              color="#9b6bff"),
         })
     rows = sel.selection.rows if sel else []
     st.caption("Tap a row to see that player's full profile.")
@@ -1216,7 +1289,7 @@ def view_accuracy():
         fig = go.Figure()
         fig.add_trace(go.Bar(x=wk_stats["week"], y=wk_stats["model"], name="Model avg miss", marker_color=ACCENT,
                              text=wk_stats["model"].round(2), textposition="inside", insidetextanchor="start",
-                             textfont=dict(color="#0d1a18")))
+                             textfont=dict(color="#ffffff")))
         fig.add_trace(go.Scatter(x=wk_stats["week"], y=wk_stats["baseline"], name="Baseline avg miss",
                                  mode="lines+markers", line=dict(color=POS_COLORS["QB"], width=3)))
         fig.update_layout(xaxis=dict(dtick=1, title="Week"), yaxis_title="Average miss (pts)")
@@ -1296,7 +1369,7 @@ def view_model():
                                 "2026 avg miss": st.column_config.NumberColumn(format="%.2f")})
 
 
-# ---------- layout: six tabs, each with one clear job ----------
+# ---------- layout: six sections in the sidebar menu, each with one clear job ----------
 qp = st.query_params
 if "give" in qp or "get" in qp:
     default_tab = "Trades"
@@ -1305,28 +1378,31 @@ elif league():
 else:
     default_tab = "This Week"
 names = ["This Week", "My Team", "Rankings", "Players", "Trades", "How It Works"]
-tabs = dict(zip(names, st.tabs(names, default=default_tab)))
+st.session_state.setdefault("nav", default_tab)
+with nav_box:
+    section = st.radio("Menu", names, key="nav", label_visibility="collapsed")
+tabs = {n: st.container() if n == section else None for n in names}
 
-with tabs["This Week"]:
+if section == "This Week":
     st.session_state.setdefault("tw_view", "Start / Sit" if "ss" in qp else "Projections")
     view = st.segmented_control("View", ["Projections", "Start / Sit"], required=True, key="tw_view",
                                 label_visibility="collapsed")
     view_projections() if view == "Projections" else view_startsit()
-with tabs["My Team"]:
+if section == "My Team":
     view_team()
-with tabs["Rankings"]:
+if section == "Rankings":
     st.session_state.setdefault("rk_view", "Rest of season")
     view = st.segmented_control("View", ["Rest of season", "Breakouts"], required=True, key="rk_view",
                                 label_visibility="collapsed")
     view_rankings() if view == "Rest of season" else view_breakouts()
-with tabs["Players"]:
+if section == "Players":
     view_players()
-with tabs["Trades"]:
+if section == "Trades":
     st.session_state.setdefault("tr_view", "Trade analyzer")
     view = st.segmented_control("View", ["Trade analyzer", "Trade finder"], required=True, key="tr_view",
                                 label_visibility="collapsed")
     view_trades() if view == "Trade analyzer" else view_trade_finder()
-with tabs["How It Works"]:
+if section == "How It Works":
     st.session_state.setdefault("hw_view", "Accuracy")
     view = st.segmented_control("View", ["Accuracy", "The model"], required=True, key="hw_view",
                                 label_visibility="collapsed")

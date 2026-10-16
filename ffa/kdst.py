@@ -106,8 +106,29 @@ def build(games, tg, completed_week, injuries):
     rows.append(_predict(df_.assign(position="DST"), models["DST"]))
 
     out = pd.concat(rows, ignore_index=True)
+
+    # games already played this week (e.g. Thursday night): keep them, scored with the actual result
+    cur_week = int(upcoming["week"].min()) if len(upcoming) else None
+    done = []
+    if cur_week:
+        kd_ = k[(k["season"] == CURRENT_SEASON) & (k["week"] == cur_week)].assign(position="K")
+        dd_ = d[(d["season"] == CURRENT_SEASON) & (d["week"] == cur_week)].copy()
+        dd_["player_id"] = "DST_" + dd_["team"]
+        dd_["name"] = dd_["team"].map(teams["team_nick"]).fillna(dd_["team"]) + " D/ST"
+        dd_["headshot_url"] = dd_["team"].map(teams["team_logo_espn"])
+        dd_ = dd_.assign(position="DST")
+        for x in (kd_, dd_):
+            if len(x):
+                x = x.merge(tg[["season", "week", "team", "game_id", "gameday", "opp", "home", "spread",
+                                "implied_total"]], on=["season", "week", "team"], how="left", suffixes=("_x", ""))
+                x = x.assign(proj=x["pts"], floor=x["pts"], ceiling=x["pts"], ewm_ppr=x["ewm_after"])
+                done.append(x)
+    if done:
+        out = pd.concat([out] + done, ignore_index=True)
     status = injuries.dropna(subset=["status"]).set_index("player_id")["status"] if len(injuries) else pd.Series(dtype=str)
     out["status"] = out["player_id"].map(status)
+    if "pts" in out:
+        out.loc[out["pts"].notna(), "status"] = "Final"
     out["def_factor"] = 1.0
     hist = pd.concat([k.assign(position="K")[["player_id", "season", "week", "opponent_team", "pts"]]
                       .rename(columns={"opponent_team": "opp"}),

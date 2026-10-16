@@ -54,6 +54,20 @@ def main(offline=False):
     else:
         print(f"  Week {next_week} injury report not out yet")
 
+    # games already played this week (Thursday/Saturday): keep those players, scored with the actual result
+    tg = features.team_games(games)
+    done_games = tg[(tg["season"] == CURRENT_SEASON) & (tg["week"] == next_week) & tg["played"]]
+    played = pw[(pw["season"] == CURRENT_SEASON) & (pw["week"] == next_week)].merge(
+        done_games[["team", "game_id", "gameday", "opp", "home", "spread", "implied_total"]],
+        on=["team", "game_id"], how="inner")
+    if len(played):
+        latest = proj.drop_duplicates("player_id").set_index("player_id")["ewm_ppr"]
+        played = played.assign(week=next_week, def_factor=1.0, proj=played["ppr"], floor=played["ppr"],
+                               ceiling=played["ppr"], ewm_ppr=played["player_id"].map(latest).fillna(played["ppr"]),
+                               last_completed_week=last_week, status="Final")
+        proj = pd.concat([proj, played[proj.columns]], ignore_index=True)
+        print(f"  {len(played)} players already played Week {next_week}; using their actual points")
+
     # kickers and defenses
     kd, kd_metrics, kd_hist = kdst.build(games, features.team_games(games), last_week, inj)
     kd = kd.assign(last_completed_week=last_week)
@@ -107,7 +121,8 @@ def track_accuracy(proj, train, pw, games, last_week):
     # 1) Live snapshot for the upcoming week. Each run overwrites it until kickoff, so the final
     #    saved version is the last one before each player's game (including injury news).
     next_week = int(proj["week"].min())
-    snap = proj[proj["week"] == next_week].assign(season=CURRENT_SEASON, source="live")[HIST_COLS]
+    snap = proj[(proj["week"] == next_week) & (proj["status"] != "Final")].assign(
+        season=CURRENT_SEASON, source="live")[HIST_COLS]
     key = ["season", "week", "player_id"]
     hist = hist.merge(snap[key], on=key, how="left", indicator=True)
     hist = hist[hist["_merge"] == "left_only"].drop(columns="_merge")
