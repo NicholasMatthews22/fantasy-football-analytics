@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ffa import sleeper
+from ffa import fantasycalc, sleeper
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
@@ -220,6 +220,50 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .wp-bar { height: 8px; border-radius: 4px; background: var(--qb); margin: 10px 0 14px; overflow: hidden; }
 .wp-bar div { height: 100%; background: var(--accent); }
 
+/* trade finder */
+.tf-count { color: var(--muted); font-size: .85rem; margin: 4px 0 12px; }
+.tf-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 8px; }
+.tf-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .85rem;
+  color: #cfd5e3; margin-bottom: 10px; }
+.tf-g { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 6px;
+  font-variant-numeric: tabular-nums; }
+.tf-g.me { background: rgba(155,107,255,.18); color: #c9b3ff; }
+.tf-g.them { background: var(--surface2); color: var(--muted); }
+.tf-sides { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 8px; }
+.tf-lbl { font-size: .66rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600;
+  margin-bottom: 6px; }
+.tf-pl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tf-pl .hs { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2);
+  flex: none; }
+.tf-txt { min-width: 0; }
+.tf-txt .nm { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-txt .mt { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-arrow { text-align: center; color: var(--muted); font-size: 1.1rem; }
+
+/* trade finder */
+.tf-count { color: var(--muted); font-size: .82rem; margin: 4px 0 12px; }
+.tf-count b { color: #e8ebf2; }
+.tf-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+  min-height: 210px; display: flex; flex-direction: column; }
+.tf-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .85rem; color: #cfd5e3;
+  margin-bottom: 10px; }
+.tf-fair { font-size: .72rem; font-weight: 700; color: var(--muted); }
+.tf-sides { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); align-items: start; gap: 8px; flex: 1; }
+.tf-lbl { font-size: .66rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600;
+  margin-bottom: 6px; display: flex; justify-content: space-between; }
+.tf-lbl span { color: #cfd5e3; font-variant-numeric: tabular-nums; }
+.tf-pl { display: flex; align-items: center; gap: 9px; min-width: 0; margin-bottom: 6px; }
+.tf-pl .hs { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); flex: none; }
+.tf-txt { min-width: 0; }
+.tf-txt .nm { font-weight: 700; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-txt .mt { font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tf-arrow { text-align: center; color: var(--muted); font-size: 1rem; padding-top: 26px; }
+.tf-foot { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.tf-g { display: inline-block; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.tf-g.me { background: rgba(155,107,255,.18); color: #c9b3ff; }
+.tf-g.them { background: var(--surface2); color: var(--muted); }
+
 /* phones */
 @media (max-width: 900px) {
   .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -250,6 +294,9 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   .pc-row .hs { width: 38px; height: 38px; }
   .pc-range { display: none; }
   .pc-pts { font-size: 1.2rem; }
+  .tf-sides { grid-template-columns: 1fr; }
+  .tf-arrow { padding: 0; transform: rotate(90deg); }
+  .tf-card { min-height: 0; }
   .lu-row .logo { display: none; }
   .lu-row .slot { width: 40px; }
   .lu-pts { font-size: 1.25rem; }
@@ -487,6 +534,9 @@ def connect_league(league, user_id):
         "rostered": {to_gsis(p) for p in sleeper.rostered_ids(rosters)} - {None},
         "mine": set(i for i in my_ids if i), "unmatched": sum(1 for i in my_ids if i not in label_by_id),
         "my_roster_id": mine.get("roster_id"),
+        "dynasty": (league.get("settings") or {}).get("type") == 2,
+        "superflex": "SUPER_FLEX" in (league.get("roster_positions") or [])
+                     or (league.get("roster_positions") or []).count("QB") >= 2,
         "rosters": {r.get("roster_id"): {"owner": names.get(r.get("owner_id"), f"Team {r.get('roster_id')}"),
                                          "ids": [g for g in (to_gsis(p) for p in (r.get("players") or [])) if g]}
                     for r in rosters},
@@ -858,72 +908,147 @@ def view_matchup(week):
     st.caption("Win probability compares both lineups' projected ranges.")
 
 
-def use_trade(give_label, get_label):
-    st.session_state["give"] = [give_label]
-    st.session_state["get"] = [get_label]
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def market_values(dynasty, superflex, teams, ppr):
+    """FantasyCalc trade values keyed by our player IDs. Empty dict if the service can't be reached."""
+    try:
+        raw = fantasycalc.fetch_values(dynasty, superflex, teams, ppr)
+    except Exception:
+        return {}
+    return {g: v for g, v in ((to_gsis(sid), val) for sid, val in raw.items()) if g}
+
+
+def league_market_values():
+    lg = league()
+    if not lg:
+        return {}
+    return market_values(lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+
+
+def use_trade(give_labels, get_labels):
+    st.session_state["give"] = list(give_labels)
+    st.session_state["get"] = list(get_labels)
     st.session_state["tr_view"] = "Trade analyzer"
 
 
+def package_value(vals):
+    """What a group of players is worth in one trade. Extra pieces count for less than their sticker value,
+    because one great player is worth more than two good ones (roster spots and lineup slots are limited)."""
+    vals = sorted(vals, reverse=True)
+    return vals[0] + 0.7 * sum(vals[1:]) if vals else 0.0
+
+
 def view_trade_finder():
-    intro("Trade finder", "Scans every team in your league for 1-for-1 trades that make both starting lineups better, "
-          "so they're trades the other manager has a reason to accept.",
-          "Connect your Sleeper league in My Team, pick the weeks to count, then send an idea to the analyzer.")
+    intro("Trade finder", "Finds trades with each team in your league that are fair by market value and make both "
+          "starting lineups better, so the other manager has a real reason to say yes.",
+          "Connect your Sleeper league in My Team. Open any idea in the trade analyzer to look closer.")
     lg = league()
     if not lg:
-        st.info("Connect your Sleeper league in the My Team tab to find trades.")
+        st.info("Connect your Sleeper league in My Team to find trades.")
         return
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
-    w0, w1 = st.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default),
-                       key="tf_w")
+    c1, c2, c3 = st.columns([3, 1.3, 1.3])
+    w0, w1 = c1.slider("Weeks to count for lineup gains", min_value=weeks[0], max_value=weeks[-1],
+                       value=(weeks[0], end_default), key="tf_w")
+    kinds = c2.selectbox("Trade types", ["1-for-1 and 2-for-1", "1-for-1 only"], key="tf_kinds")
+    tol = c3.selectbox("Fairness", ["Strict (±8%)", "Normal (±15%)", "Loose (±25%)"], index=1, key="tf_tol")
+    tol = {"Strict (±8%)": .08, "Normal (±15%)": .15, "Loose (±25%)": .25}[tol]
+
     ros = ros_values(w0, w1, lg["teams"], scoring_name).set_index("player_id")
+    market = league_market_values()
+    if market:
+        value = lambda pid: market.get(pid, 0.0)
+        src = "FantasyCalc " + ("dynasty" if lg.get("dynasty") else "redraft") + " market values" + \
+              (" (superflex)" if lg.get("superflex") else "")
+    else:
+        value = lambda pid: float(ros.at[pid, "value"]) * 30 if pid in ros.index else 0.0
+        src = "projected rest-of-season value (market values couldn't be loaded)"
     slots = my_slots()
 
     def plist(ids):
         return [(i, ros.at[i, "position"], float(ros.at[i, "ros"])) for i in ids if i in ros.index]
 
-    mine = plist(lg["rosters"].get(lg["my_roster_id"], {}).get("ids", []))
+    def tradeable(ids):
+        return [i for i in ids if i in ros.index and value(i) > 0 and ros.at[i, "position"] not in ("K", "DST")]
+
+    mine_ids = lg["rosters"].get(lg["my_roster_id"], {}).get("ids", [])
+    mine, my_trade = plist(mine_ids), tradeable(mine_ids)
     base_me = lineup_total(mine, slots)
     ideas = []
+
+    def consider(give, get, theirs, base_them, owner):
+        vg, vr = package_value([value(i) for i in give]), package_value([value(i) for i in get])
+        if min(vg, vr) <= 0 or abs(vg - vr) / max(vg, vr) > tol:
+            return
+        me_after = [x for x in mine if x[0] not in give] + [x for x in theirs if x[0] in get]
+        th_after = [x for x in theirs if x[0] not in get] + [x for x in mine if x[0] in give]
+        gm = lineup_total(me_after, slots) - base_me
+        gt = lineup_total(th_after, slots) - base_them
+        if gm > 3 and gt > 0:
+            ideas.append({"team": owner, "give": give, "get": get, "gm": gm, "gt": gt, "vg": vg, "vr": vr})
+
+    two_for_one = kinds.startswith("1-for-1 and")
     for rid, r in lg["rosters"].items():
         if rid == lg["my_roster_id"]:
             continue
-        theirs = plist(r["ids"])
+        theirs, their_trade = plist(r["ids"]), tradeable(r["ids"])
         base_them = lineup_total(theirs, slots)
-        for a in mine:
-            for b in theirs:
-                if a[2] < 15 or b[2] < 15:
-                    continue
-                gm = lineup_total([x for x in mine if x[0] != a[0]] + [b], slots) - base_me
-                gt = lineup_total([x for x in theirs if x[0] != b[0]] + [a], slots) - base_them
-                if gm > 3 and gt > 3:
-                    ideas.append({"team": r["owner"], "give": a[0], "get": b[0], "gm": gm, "gt": gt})
+        for a in my_trade:
+            for b in their_trade:
+                consider([a], [b], theirs, base_them, r["owner"])
+        if two_for_one:
+            for i, a1 in enumerate(my_trade):        # I give two, get one better player
+                for a2 in my_trade[i + 1:]:
+                    for b in their_trade:
+                        consider([a1, a2], [b], theirs, base_them, r["owner"])
+            for a in my_trade:                       # I give one, get two
+                for j, b1 in enumerate(their_trade):
+                    for b2 in their_trade[j + 1:]:
+                        consider([a], [b1, b2], theirs, base_them, r["owner"])
+
     if not ideas:
-        st.info("No trades found that help both lineups. Your roster may already be well balanced, "
-                "or try a different week range.")
+        st.info("No fair trades found that help both lineups. Try a looser fairness setting or a different week range.")
         return
-    # best ideas first, but no player shows up more than twice so the list stays varied
+    # best combined lineup gain first; keep the list varied (each player at most twice)
     picked, seen = [], {}
-    for t in sorted(ideas, key=lambda x: (-min(x["gm"], x["gt"]), -x["gm"])):
-        if seen.get(t["give"], 0) < 2 and seen.get(t["get"], 0) < 2:
+    for t in sorted(ideas, key=lambda x: -(x["gm"] + x["gt"])):
+        if all(seen.get(p_, 0) < 2 for p_ in t["give"] + t["get"]):
             picked.append(t)
-            seen[t["give"]] = seen.get(t["give"], 0) + 1
-            seen[t["get"]] = seen.get(t["get"], 0) + 1
+            for p_ in t["give"] + t["get"]:
+                seen[p_] = seen.get(p_, 0) + 1
         if len(picked) == 12:
             break
-    ideas = picked
-    st.markdown(f"**{len(ideas)} win-win trade ideas** · gains are rest-of-season points from your starting lineup")
-    for k, t in enumerate(ideas):
-        g, r = players.set_index("player_id").loc[t["give"]], players.set_index("player_id").loc[t["get"]]
-        c1, c2, c3, c4 = st.columns([3, 3, 2, 1.3], vertical_alignment="center")
-        c1.markdown(f"Give {pill(g['position'])} **{g['name']}**", unsafe_allow_html=True)
-        c2.markdown(f"Get {pill(r['position'])} **{r['name']}** from {t['team']}", unsafe_allow_html=True)
-        c3.markdown(f"You **+{t['gm']:.0f}** · them +{t['gt']:.0f}")
-        c4.button("Analyze", key=f"tf_{k}", on_click=use_trade, args=(label_by_id[t["give"]], label_by_id[t["get"]]),
-                  width="stretch")
-    st.caption("Uses your league's roster slots and scoring. Value is what each player adds to a starting lineup, "
-               "so depth that wouldn't start counts for nothing.")
 
+    st.markdown(f'<div class="tf-count">{len(picked)} fair trade ideas · value from {src} · lineup gains are '
+                f'rest-of-season starter points (Weeks {w0}-{w1})</div>', unsafe_allow_html=True)
+    pinfo = players.set_index("player_id")
+
+    def side_html(label, pids, val):
+        rows_ = "".join(
+            f'<div class="tf-pl"><img class="hs" src="{pinfo.at[p_, "headshot_url"]}"><div class="tf-txt">'
+            f'<div class="nm">{pinfo.at[p_, "name"]}</div><div class="mt">{pill(pinfo.at[p_, "position"])} '
+            f'{pinfo.at[p_, "team"]} · value {value(p_):,.0f}</div></div></div>' for p_ in pids)
+        return (f'<div class="tf-side"><div class="tf-lbl">{label} <span>{val:,.0f}</span></div>{rows_}</div>')
+
+    cols = st.columns(2, gap="medium")
+    for k, t in enumerate(picked):
+        diff = (t["vr"] - t["vg"]) / max(t["vg"], t["vr"]) * 100
+        with cols[k % 2]:
+            html(f"""<div class="tf-card">
+              <div class="tf-head"><span>with <b>{t['team']}</b></span>
+                <span class="tf-fair">{'Even' if abs(diff) < 3 else (f'{diff:+.0f}% value to you')}</span></div>
+              <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">⇄</div>
+                {side_html("You get", t["get"], t["vr"])}</div>
+              <div class="tf-foot"><span class="tf-g me">Your lineup +{t['gm']:.0f} pts</span>
+                <span class="tf-g them">Their lineup +{t['gt']:.0f} pts</span></div>
+            </div>""")
+            st.button("Open in trade analyzer", key=f"tf_{k}", on_click=use_trade,
+                      args=([label_by_id[p_] for p_ in t["give"]], [label_by_id[p_] for p_ in t["get"]]),
+                      width="stretch")
+            st.write("")
+    st.caption("Fair = both sides within your fairness setting by market value. In 2-for-1 deals the second player "
+               "counts for 70% of their value, since one great player is worth more than two good ones.")
 
 
 # ---------- tabs ----------
@@ -1290,6 +1415,14 @@ def view_trades():
             verdict, fn = "You win this trade", st.success
         else:
             verdict, fn = "You lose this trade", st.error
+        mv = league_market_values()
+        if mv:
+            mg = package_value([mv.get(id_by_label[l], 0) for l in give])
+            mr = package_value([mv.get(id_by_label[l], 0) for l in get])
+            if max(mg, mr) > 0:
+                st.markdown(f'<div class="tf-count">Trade market (FantasyCalc{" dynasty" if league().get("dynasty") else ""}): '
+                            f'you give <b>{mg:,.0f}</b> · you get <b>{mr:,.0f}</b> '
+                            f'({(mr - mg) / max(mg, mr) * 100:+.0f}%)</div>', unsafe_allow_html=True)
         fn(f"**{verdict}** · you {'gain' if diff >= 0 else 'give up'} {abs(diff):.1f} points of value above "
            f"replacement (Weeks {w0}-{w1}, {teams_n}-team league)")
         cfg = {c: st.column_config.NumberColumn(format="%.1f") for c in ["ROS points", "Value"]}

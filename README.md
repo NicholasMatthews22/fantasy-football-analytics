@@ -19,7 +19,7 @@ Six tabs, each with one job: **This Week** (projections and start/sit), **My Tea
 | **Start / Sit** | Compare 2 to 4 players on side-by-side cards with team colors, matchup, injury status, and floor-to-ceiling range |
 | **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
 | **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
-| **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 trades that improve both teams' starting lineups |
+| **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
 | **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
 | **Accuracy** | Projections are saved before kickoff every week and scored against real results: weekly average miss vs. baseline, best calls, biggest misses |
 | **Model** | Backtest results, what drives the projections, and feature experiments that didn't make the cut |
@@ -76,7 +76,7 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 
 ## Tech stack
 
-Python, pandas, SQLite, scikit-learn, Plotly, Streamlit, GitHub Actions, Sleeper API, Open-Meteo API
+Python, pandas, SQLite, scikit-learn, Plotly, Streamlit, GitHub Actions, Sleeper API, FantasyCalc API, Open-Meteo API
 
 ## Project structure
 
@@ -89,6 +89,8 @@ ffa/
   model.py                 training, backtesting, projections
   breakouts.py             xFP model and breakout scoring
   sleeper.py               Sleeper league import
+  fantasycalc.py           trade market values
+  kdst.py                  kicker and defense projections
   weather.py               game-day forecasts
 scripts/update.py          runs the full pipeline
 data/ff.db                 database the app reads
