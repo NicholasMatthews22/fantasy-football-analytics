@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ffa import fantasycalc, sleeper
+from ffa import fantasycalc, season_sim, sleeper
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
@@ -220,6 +220,46 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .wp-bar { height: 8px; border-radius: 4px; background: var(--qb); margin: 10px 0 14px; overflow: hidden; }
 .wp-bar div { height: 100%; background: var(--accent); }
 
+/* avatars */
+.av { border-radius: 50%; object-fit: cover; flex: none; background: var(--surface2); vertical-align: middle; }
+.av-txt { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .7rem;
+  color: #e8ebf2; background: #2d3448; }
+
+/* scoreboard */
+.sb { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 12px; }
+.sb-team { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sb-team.right { justify-content: flex-end; text-align: right; }
+.sb-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-rec { color: var(--muted); font-size: .76rem; }
+.sb-pts { font-size: 2rem; font-weight: 800; margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.sb-team.right .sb-pts { margin: 0 auto 0 0; }
+.sb-mid { text-align: center; }
+.sb-wk { font-size: .68rem; font-weight: 700; letter-spacing: 1px; color: var(--muted); }
+.sb-vs { font-size: .72rem; color: var(--muted); }
+.sb-wp { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: .8rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; }
+.sb-wp .wp-bar { flex: 1; margin: 0; }
+
+/* power rankings */
+.pr { display: grid; gap: 4px; }
+.pr-head, .pr-row { display: grid; grid-template-columns: 34px minmax(0, 2.2fr) 1fr .8fr .8fr 1.4fr 1.4fr; align-items: center;
+  gap: 12px; padding: 8px 14px; }
+.pr-head { font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+.pr-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.pr-row.mine { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.pr-rank { font-weight: 800; color: var(--muted); }
+.pr-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pr-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pr-num small, .pr-bar small { display: block; color: var(--muted); font-weight: 500; font-size: .7rem; }
+.pr-bar b { font-variant-numeric: tabular-nums; font-size: .9rem; }
+.pr-bar i { display: block; height: 6px; border-radius: 3px; background: var(--surface2); margin-top: 4px; overflow: hidden; }
+.pr-bar em { display: block; height: 100%; background: var(--accent); }
+.pr-bar em.t { background: #ffb35c; }
+.tf-who { display: inline-flex; align-items: center; gap: 8px; }
+.tf-rec { color: var(--muted); font-size: .76rem; }
+
 /* trade finder */
 .tf-count { color: var(--muted); font-size: .85rem; margin: 4px 0 12px; }
 .tf-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
@@ -240,6 +280,46 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .tf-txt .nm { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tf-txt .mt { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tf-arrow { text-align: center; color: var(--muted); font-size: 1.1rem; }
+
+/* avatars */
+.av { border-radius: 50%; object-fit: cover; flex: none; background: var(--surface2); vertical-align: middle; }
+.av-txt { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .7rem;
+  color: #e8ebf2; background: #2d3448; }
+
+/* scoreboard */
+.sb { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 12px; }
+.sb-team { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sb-team.right { justify-content: flex-end; text-align: right; }
+.sb-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-rec { color: var(--muted); font-size: .76rem; }
+.sb-pts { font-size: 2rem; font-weight: 800; margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.sb-team.right .sb-pts { margin: 0 auto 0 0; }
+.sb-mid { text-align: center; }
+.sb-wk { font-size: .68rem; font-weight: 700; letter-spacing: 1px; color: var(--muted); }
+.sb-vs { font-size: .72rem; color: var(--muted); }
+.sb-wp { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: .8rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; }
+.sb-wp .wp-bar { flex: 1; margin: 0; }
+
+/* power rankings */
+.pr { display: grid; gap: 4px; }
+.pr-head, .pr-row { display: grid; grid-template-columns: 34px minmax(0, 2.2fr) 1fr .8fr .8fr 1.4fr 1.4fr; align-items: center;
+  gap: 12px; padding: 8px 14px; }
+.pr-head { font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+.pr-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.pr-row.mine { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.pr-rank { font-weight: 800; color: var(--muted); }
+.pr-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pr-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pr-num small, .pr-bar small { display: block; color: var(--muted); font-weight: 500; font-size: .7rem; }
+.pr-bar b { font-variant-numeric: tabular-nums; font-size: .9rem; }
+.pr-bar i { display: block; height: 6px; border-radius: 3px; background: var(--surface2); margin-top: 4px; overflow: hidden; }
+.pr-bar em { display: block; height: 100%; background: var(--accent); }
+.pr-bar em.t { background: #ffb35c; }
+.tf-who { display: inline-flex; align-items: center; gap: 8px; }
+.tf-rec { color: var(--muted); font-size: .76rem; }
 
 /* trade finder */
 .tf-count { color: var(--muted); font-size: .82rem; margin: 4px 0 12px; }
@@ -295,6 +375,17 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   .pc-range { display: none; }
   .pc-pts { font-size: 1.2rem; }
   .tf-sides { grid-template-columns: 1fr; }
+  .pr-head { display: none; }
+  .pr-row { grid-template-columns: 18px minmax(0, 1fr) 40px 62px 48px; gap: 7px; padding: 8px 10px; font-size: .85rem; }
+  .pr-row .av { width: 26px !important; height: 26px !important; }
+  .pr-num small { display: none; }
+  .pr-bar small { display: none; }
+  .pr-bar b { font-size: .8rem; }
+  .pr-row > span:nth-child(4), .pr-row > span:nth-child(5) { display: none; }
+  .sb { grid-template-columns: 1fr 1fr; }
+  .sb-mid { display: none; }
+  .sb-pts { font-size: 1.5rem; }
+  .sb-team .av { width: 36px !important; height: 36px !important; }
   .tf-arrow { padding: 0; transform: rotate(90deg); }
   .tf-card { min-height: 0; }
   .lu-row .logo { display: none; }
@@ -520,9 +611,12 @@ def connect_league(league, user_id):
     """Pull every roster, team name, scoring setting, and lineup slot from a Sleeper league."""
     rosters = sl_rosters(league["league_id"])
     try:
-        names = {u["user_id"]: sleeper.team_name(u) for u in sl_users(league["league_id"])}
+        users = sl_users(league["league_id"])
     except sleeper.SleeperError:
-        names = {}
+        users = []
+    names = {u["user_id"]: sleeper.team_name(u) for u in users}
+    avatars = {u["user_id"]: sleeper.avatar_url(u) for u in users}
+    lsettings = league.get("settings") or {}
     mine = sleeper.my_roster(rosters, user_id) or {}
     my_ids = [to_gsis(p) for p in (mine.get("players") or [])]
     st.session_state["team"] = [label_by_id[i] for i in my_ids if i in label_by_id]
@@ -537,9 +631,16 @@ def connect_league(league, user_id):
         "dynasty": (league.get("settings") or {}).get("type") == 2,
         "superflex": "SUPER_FLEX" in (league.get("roster_positions") or [])
                      or (league.get("roster_positions") or []).count("QB") >= 2,
-        "rosters": {r.get("roster_id"): {"owner": names.get(r.get("owner_id"), f"Team {r.get('roster_id')}"),
-                                         "ids": [g for g in (to_gsis(p) for p in (r.get("players") or [])) if g]}
-                    for r in rosters},
+        "rosters": {r.get("roster_id"): {
+            "owner": names.get(r.get("owner_id"), f"Team {r.get('roster_id')}"),
+            "avatar": avatars.get(r.get("owner_id")),
+            "wins": int((r.get("settings") or {}).get("wins", 0)),
+            "losses": int((r.get("settings") or {}).get("losses", 0)),
+            "ties": int((r.get("settings") or {}).get("ties", 0)),
+            "pf": float((r.get("settings") or {}).get("fpts", 0)) + float((r.get("settings") or {}).get("fpts_decimal", 0)) / 100,
+            "ids": [g for g in (to_gsis(p) for p in (r.get("players") or [])) if g]} for r in rosters},
+        "playoff_teams": int(lsettings.get("playoff_teams") or 6),
+        "playoff_start": int(lsettings.get("playoff_week_start") or 15),
     }
     st.session_state["scoring"] = "My league"
 
@@ -827,6 +928,17 @@ def lineup_rows(lineup, unavailable=None):
     return '<div class="lu">' + "".join(parts) + "</div>"
 
 
+def avatar_html(team, size=34):
+    if team.get("avatar"):
+        return f'<img class="av" src="{team["avatar"]}" style="width:{size}px;height:{size}px">'
+    initials = "".join(w[0] for w in team.get("owner", "?").split()[:2]).upper()
+    return f'<span class="av av-txt" style="width:{size}px;height:{size}px">{initials}</span>'
+
+
+def record(team):
+    return f"{team.get('wins', 0)}-{team.get('losses', 0)}" + (f"-{team['ties']}" if team.get("ties") else "")
+
+
 def win_probability(a, b):
     """P(team A outscores team B), treating each player's floor-to-ceiling range as roughly normal."""
     def stats(rows):
@@ -877,12 +989,18 @@ def view_matchup(week):
     op_name = lg["rosters"].get(opp["roster_id"], {}).get("owner", "Opponent")
     p = win_probability(my_rows, op_rows)
     my_tot, op_tot = sum(r["proj"] for r in my_rows), sum(r["proj"] for r in op_rows)
-    html(f"""<div class="mu">
-      <div class="mu-side"><div class="mu-name">{me_name}</div><div class="mu-pts">{my_tot:.1f}</div></div>
-      <div class="mu-mid"><div class="mu-wp">{p * 100:.0f}%</div><small>win probability</small></div>
-      <div class="mu-side right"><div class="mu-name">{op_name}</div><div class="mu-pts">{op_tot:.1f}</div></div>
-    </div>
-    <div class="wp-bar"><div style="width:{p * 100:.1f}%"></div></div>""")
+    me_t = lg["rosters"].get(lg["my_roster_id"], {})
+    op_t = lg["rosters"].get(opp["roster_id"], {})
+    html(f"""<div class="sb">
+      <div class="sb-team">{avatar_html(me_t, 52)}<div><div class="sb-name">{me_name}</div>
+        <div class="sb-rec">{record(me_t)} · {me_t.get('pf', 0):.0f} PF</div></div>
+        <div class="sb-pts">{my_tot:.1f}</div></div>
+      <div class="sb-mid"><div class="sb-wk">WEEK {week}</div><div class="sb-vs">projected</div></div>
+      <div class="sb-team right"><div class="sb-pts">{op_tot:.1f}</div><div><div class="sb-name">{op_name}</div>
+        <div class="sb-rec">{record(op_t)} · {op_t.get('pf', 0):.0f} PF</div></div>{avatar_html(op_t, 52)}</div>
+      <div class="sb-wp"><span>{p * 100:.0f}%</span><div class="wp-bar"><div style="width:{p * 100:.1f}%"></div></div>
+        <span>{(1 - p) * 100:.0f}%</span></div>
+    </div>""")
 
     # could a different lineup from my roster do better?
     roster_ids = lg["rosters"].get(lg["my_roster_id"], {}).get("ids", [])
@@ -923,6 +1041,90 @@ def league_market_values():
     if not lg:
         return {}
     return market_values(lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def run_season_sim(league_id, scoring_key, n_sims=5000):
+    lg = league()
+    slots = my_slots()
+    rids = list(lg["rosters"])
+    idx = {r: i for i, r in enumerate(rids)}
+    T = len(rids)
+
+    def week_strength(week):
+        mu, sd = np.zeros(T), np.zeros(T)
+        wk_rows = proj[proj["week"] == week]
+        for r, i in idx.items():
+            avail = wk_rows[wk_rows["player_id"].isin(lg["rosters"][r]["ids"]) & (wk_rows["status"] != "Out")]
+            starters = [x for _, x in optimize(avail, slots) if x is not None]
+            mu[i] = sum(x["proj"] for x in starters)
+            sd[i] = math.sqrt(sum(((x["ceiling"] - x["floor"]) / 2.07) ** 2 for x in starters)) or 1.0
+        return mu, sd
+
+    weeks, strength = [], []
+    for w in range(next_week, lg["playoff_start"]):
+        try:
+            ms = sl_matchups(lg["id"], w)
+        except sleeper.SleeperError:
+            continue
+        groups = {}
+        for m in ms:
+            if m.get("matchup_id") is not None and m.get("roster_id") in idx:
+                groups.setdefault(m["matchup_id"], []).append(idx[m["roster_id"]])
+        pairs = [tuple(g) for g in groups.values() if len(g) == 2]
+        if not pairs:
+            continue
+        mu, sd = week_strength(w)
+        weeks.append((mu, sd, pairs))
+        strength.append(mu)
+    pw_ = [week_strength(w) for w in range(lg["playoff_start"], min(lg["playoff_start"] + 3, 19))
+           if w in set(proj["week"])]
+    if pw_:
+        p_mu, p_sd = np.mean([x[0] for x in pw_], axis=0), np.mean([x[1] for x in pw_], axis=0)
+    else:
+        p_mu, p_sd = week_strength(next_week)
+    res = season_sim.simulate(rids, [lg["rosters"][r]["wins"] for r in rids], [lg["rosters"][r]["pf"] for r in rids],
+                              weeks, lg["playoff_teams"], p_mu, p_sd, n_sims=n_sims)
+    res["weekly"] = np.mean(strength, axis=0) if strength else p_mu
+    res["rids"] = rids
+    res["n_weeks"] = len(weeks)
+    return res
+
+
+def view_league():
+    intro("Power rankings", "Each team's chance to make the playoffs and win the title, from 5,000 simulations of the "
+          "rest of the season using every team's best projected lineup, your league's real schedule, and current records.",
+          "Teams are ranked by title odds. Your team is highlighted.")
+    lg = league()
+    if not lg:
+        st.info("Connect your Sleeper league in My Team to see power rankings and playoff odds.")
+        return
+    with st.spinner("Simulating the rest of the season..."):
+        res = run_season_sim(lg["id"], scoring_name)
+    rows = []
+    for i, r in enumerate(res["rids"]):
+        t = lg["rosters"][r]
+        rows.append({"rid": r, "t": t, "weekly": res["weekly"][i], "wins": res["avg_wins"][i],
+                     "playoff": res["playoff_pct"][i], "bye": res["bye_pct"][i], "title": res["title_pct"][i]})
+    rows.sort(key=lambda x: (-x["title"], -x["playoff"], -x["weekly"]))
+    games_left = res["n_weeks"]
+    out = [f'<div class="pr-head"><span>#</span><span>Team</span><span>Record</span><span>Proj / wk</span>'
+           f'<span>Proj wins</span><span>Playoffs</span><span>Title</span></div>']
+    for k, x in enumerate(rows, 1):
+        mine = x["rid"] == lg["my_roster_id"]
+        bye = f'<small>bye {x["bye"] * 100:.0f}%</small>' if res["has_byes"] else ""
+        out.append(f"""<div class="pr-row {'mine' if mine else ''}">
+          <span class="pr-rank">{k}</span>
+          <span class="pr-team">{avatar_html(x['t'], 32)}<span class="pr-name">{x['t']['owner']}</span></span>
+          <span class="pr-num">{record(x['t'])}<small>{x['t'].get('pf', 0):.0f} PF</small></span>
+          <span class="pr-num">{x['weekly']:.1f}</span>
+          <span class="pr-num">{x['wins']:.1f}</span>
+          <span class="pr-bar"><b>{x['playoff'] * 100:.0f}%</b><i><em style="width:{x['playoff'] * 100:.1f}%"></em></i>{bye}</span>
+          <span class="pr-bar"><b>{x['title'] * 100:.0f}%</b><i><em class="t" style="width:{x['title'] * 100:.1f}%"></em></i></span>
+        </div>""")
+    html('<div class="pr">' + "".join(out) + "</div>")
+    st.caption(f"{games_left} regular-season weeks left before playoffs start in Week {lg['playoff_start']} · "
+               f"{lg['playoff_teams']} playoff teams · ties broken by points for. Refreshes with each projection update.")
 
 
 def use_trade(give_labels, get_labels):
@@ -986,12 +1188,14 @@ def view_trade_finder():
         gm = lineup_total(me_after, slots) - base_me
         gt = lineup_total(th_after, slots) - base_them
         if gm > 3 and gt > 0:
-            ideas.append({"team": owner, "give": give, "get": get, "gm": gm, "gt": gt, "vg": vg, "vr": vr})
+            ideas.append({"team": owner, "rid": cur_rid[0], "give": give, "get": get, "gm": gm, "gt": gt, "vg": vg, "vr": vr})
 
     two_for_one = kinds.startswith("1-for-1 and")
+    cur_rid = [None]
     for rid, r in lg["rosters"].items():
         if rid == lg["my_roster_id"]:
             continue
+        cur_rid[0] = rid
         theirs, their_trade = plist(r["ids"]), tradeable(r["ids"])
         base_them = lineup_total(theirs, slots)
         for a in my_trade:
@@ -1036,7 +1240,8 @@ def view_trade_finder():
         diff = (t["vr"] - t["vg"]) / max(t["vg"], t["vr"]) * 100
         with cols[k % 2]:
             html(f"""<div class="tf-card">
-              <div class="tf-head"><span>with <b>{t['team']}</b></span>
+              <div class="tf-head"><span class="tf-who">{avatar_html(lg["rosters"][t["rid"]], 26)} <b>{t['team']}</b>
+                <span class="tf-rec">{record(lg["rosters"][t["rid"]])}</span></span>
                 <span class="tf-fair">{'Even' if abs(diff) < 3 else (f'{diff:+.0f}% value to you')}</span></div>
               <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">⇄</div>
                 {side_html("You get", t["get"], t["vr"])}</div>
@@ -1547,11 +1752,11 @@ elif league():
     default_tab = "My Team"
 else:
     default_tab = "This Week"
-names = ["This Week", "My Team", "Rankings", "Players", "Trades", "How It Works"]
+names = ["This Week", "My Team", "League", "Rankings", "Players", "Trades", "How It Works"]
 st.session_state.setdefault("nav", default_tab)
 st.session_state["_nested"] = False
 with nav_box:
-    icons = {"This Week": ":material/today:", "My Team": ":material/groups:", "Rankings": ":material/leaderboard:",
+    icons = {"This Week": ":material/today:", "My Team": ":material/groups:", "League": ":material/emoji_events:", "Rankings": ":material/leaderboard:",
              "Players": ":material/person_search:", "Trades": ":material/swap_horiz:", "How It Works": ":material/insights:"}
     section = st.radio("Menu", names, key="nav", label_visibility="collapsed", format_func=lambda n: f"{icons[n]} {n}")
 tabs = {n: st.container() if n == section else None for n in names}
@@ -1567,6 +1772,10 @@ if section == "This Week":
     view_projections() if view == "Projections" else view_startsit()
 if section == "My Team":
     view_team()
+if section == "League":
+    section_header("League")
+    st.session_state["_nested"] = True
+    view_league()
 if section == "Rankings":
     section_header("Rankings")
     st.session_state["_nested"] = True

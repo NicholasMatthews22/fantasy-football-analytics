@@ -6,7 +6,7 @@ A full-PPR fantasy football platform built on NFL play-by-play data: weekly proj
 
 ## What it does
 
-Six tabs, each with one job: **This Week** (projections and start/sit), **My Team** (lineup and matchup), **Rankings** (rest of season and breakouts), **Players**, **Trades** (analyzer and finder), and **How It Works** (accuracy and the model). Covers QB, RB, WR, TE, K, and D/ST, in full PPR, half PPR, standard, or your Sleeper league's exact scoring.
+Seven sections, each with one job: **This Week** (projections and start/sit), **My Team** (lineup and matchup), **League** (power rankings and playoff odds), **Rankings** (rest of season and breakouts), **Players**, **Trades** (analyzer and finder), and **How It Works** (accuracy and the model). Covers QB, RB, WR, TE, K, and D/ST, in full PPR, half PPR, standard, or your Sleeper league's exact scoring.
 
 
 | Tab | What you get |
@@ -18,6 +18,7 @@ Six tabs, each with one job: **This Week** (projections and start/sit), **My Tea
 | **My Team** | Import your roster from Sleeper (or add players by hand) and save it in the page link. Shows get your optimal lineup (QB, 2 RB, 2 WR, TE, FLEX), close calls, bye/injury/wind alerts, and the best players actually available on your league's waiver wire |
 | **Start / Sit** | Compare 2 to 4 players on side-by-side cards with team colors, matchup, injury status, and floor-to-ceiling range |
 | **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
+| **Power rankings + playoff odds** | Simulates the rest of your Sleeper league's season 5,000 times (real schedule, current records, every team's best projected lineup, your playoff format) for each team's playoff, bye, and title odds |
 | **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
 | **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
 | **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
@@ -66,6 +67,8 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 
 **League scoring.** Projections are built in full PPR, then converted using each player's recent stat mix (receptions, yards, TDs, interceptions), so half PPR, TE premium, or 6-point passing TDs all re-rank players correctly.
 
+**Season simulation.** For each remaining regular-season week, every team's optimal lineup gives a projected score and spread; matchups come from Sleeper's schedule. Each simulation plays out the weeks, seeds the playoffs by wins then points for, and runs the bracket (top seeds get byes when needed).
+
 **Win probability.** Each starter's floor-to-ceiling range is treated as a bell curve; the lineup totals are compared to get the chance of outscoring the opponent.
 
 **Weather.** Forecasts for upcoming outdoor games come from Open-Meteo using each stadium's coordinates. Weather isn't a model feature (it didn't improve the backtest overall), but QBs in 15+ mph wind scored about 3 points below projection, so windy games get flagged.
@@ -90,6 +93,7 @@ ffa/
   breakouts.py             xFP model and breakout scoring
   sleeper.py               Sleeper league import
   fantasycalc.py           trade market values
+  season_sim.py            Monte Carlo season and playoff simulation
   kdst.py                  kicker and defense projections
   weather.py               game-day forecasts
 scripts/update.py          runs the full pipeline

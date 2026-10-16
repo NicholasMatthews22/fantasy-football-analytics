@@ -71,3 +71,11 @@ def team_name(user):
     """A league member's team name, falling back to their display name."""
     meta = user.get("metadata") or {}
     return meta.get("team_name") or user.get("display_name") or "Team"
+
+
+def avatar_url(user):
+    """A manager's team avatar if they set one, otherwise their profile picture."""
+    meta = user.get("metadata") or {}
+    if str(meta.get("avatar", "")).startswith("http"):
+        return meta["avatar"]
+    return f"https://sleepercdn.com/avatars/thumbs/{user['avatar']}" if user.get("avatar") else None
