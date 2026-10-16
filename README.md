@@ -9,12 +9,17 @@ A full-PPR fantasy football platform built on NFL play-by-play data: weekly proj
 | Tab | What you get |
 |---|---|
 | **At a glance** | Top projected player at each position, the best matchup, the top breakout candidate, and the highest-scoring offense for the upcoming week |
+| **Rankings** | Rest-of-season big board ranked by value over a replacement-level starter, with league-size adjustment and a filter for players available in your Sleeper league |
 | **Projections** | Every QB, RB, WR, and TE projected for each remaining week, with a floor, ceiling, matchup grade, Vegas implied team total, and injury status. Click a row to open the player's profile |
 | **Players** | Profile for any player: season stats and positional rank, game log, usage share trend, and projections for every remaining week |
+| **My Team** | Import your roster from Sleeper (or add players by hand) and save it in the page link. Shows get your optimal lineup (QB, 2 RB, 2 WR, TE, FLEX), close calls, bye/injury/wind alerts, and the best players actually available on your league's waiver wire |
 | **Start / Sit** | Compare 2 to 4 players on side-by-side cards with team colors, matchup, injury status, and floor-to-ceiling range |
 | **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
-| **Trade Analyzer** | Totals rest-of-season projected points for each side of a trade, accounting for remaining schedule and bye weeks |
-| **Model** | Backtest results and what drives the projections |
+| **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
+| **Accuracy** | Projections are saved before kickoff every week and scored against real results: weekly average miss vs. baseline, best calls, biggest misses |
+| **Model** | Backtest results, what drives the projections, and feature experiments that didn't make the cut |
+
+Comparisons, trades, and your roster are all saved in the page URL, so any view can be bookmarked or shared.
 
 ## Results
 
@@ -50,9 +55,17 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 
 **Trade analyzer.** Projects every remaining game using each player's current form against that week's opponent and betting line, then sums across the selected weeks.
 
+**Sleeper import.** Uses Sleeper's free public API (no login): username, then league, then roster. Sleeper player IDs are mapped to NFL IDs with the DynastyProcess ID database. Every rostered player in the league is marked taken, so waiver suggestions only show real free agents.
+
+**Weather.** Forecasts for upcoming outdoor games come from Open-Meteo using each stadium's coordinates. Weather isn't a model feature (it didn't improve the backtest overall), but QBs in 15+ mph wind scored about 3 points below projection, so windy games get flagged.
+
+**Accuracy tracking.** Every pipeline run saves the upcoming week's projections. The last save before each game is the one that gets scored. Weeks before live tracking began are backfilled walk-forward: the model is retrained before each week using only earlier games.
+
+**Experiments.** Snap share, red zone usage, usage trends, weather, stadium factors, and separate per-position models were all tested. None lowered the average miss in both backtests, so the simpler single model was kept. Results are listed in the app's Model tab.
+
 ## Tech stack
 
-Python, pandas, SQLite, scikit-learn, Plotly, Streamlit, GitHub Actions
+Python, pandas, SQLite, scikit-learn, Plotly, Streamlit, GitHub Actions, Sleeper API, Open-Meteo API
 
 ## Project structure
 
@@ -64,6 +77,8 @@ ffa/
   features.py              feature engineering
   model.py                 training, backtesting, projections
   breakouts.py             xFP model and breakout scoring
+  sleeper.py               Sleeper league import
+  weather.py               game-day forecasts
 scripts/update.py          runs the full pipeline
 data/ff.db                 database the app reads
 data/metrics.json          backtest results

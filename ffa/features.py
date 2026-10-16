@@ -102,15 +102,26 @@ def training_frame(pw, games):
     return df
 
 
-def latest_week(pw):
-    cur = pw[pw["season"] == CURRENT_SEASON]
-    return int(cur["week"].max()) if len(cur) else 0
+def completed_week(games):
+    """Last week of the current season where every game has been played.
+
+    Using the schedule (not the stats) keeps a Thursday night game from
+    making the whole week look finished.
+    """
+    g = games[games["season"] == CURRENT_SEASON]
+    done = g.groupby("week")["home_score"].apply(lambda s: s.notna().all()).sort_index()
+    last = 0
+    for week, finished in done.items():
+        if not finished:
+            break
+        last = int(week)
+    return last
 
 
 def future_frame(pw, games):
     """Feature rows for every remaining game this season, for every active player."""
     tg = team_games(games)
-    last = latest_week(pw)
+    last = completed_week(games)
     pw, st = player_state(pw)
 
     info = pw.groupby("player_id").tail(1)[["player_id", "name", "position", "team",
@@ -119,7 +130,7 @@ def future_frame(pw, games):
     state = st.groupby("player_id").tail(1)[["player_id"] + STATE_COLS]
     players = active.drop(columns=["season", "week"]).merge(state, on="player_id")
 
-    upcoming = tg[(tg["season"] == CURRENT_SEASON) & (tg["week"] > last)]
+    upcoming = tg[(tg["season"] == CURRENT_SEASON) & ~tg["played"]]
     df = players.merge(upcoming, on="team")
 
     ds = defense_state(pw, tg).groupby(["team", "position"]).tail(1)[["team", "position", "def_factor"]]

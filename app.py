@@ -1,4 +1,4 @@
-"""Fantasy Football Analytics: projections, start/sit, breakouts, trades, and player profiles (full PPR)."""
+"""Fantasy Football Analytics: projections, rankings, my team, start/sit, breakouts, trades (full PPR)."""
 import json
 import sqlite3
 
@@ -6,89 +6,164 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from ffa import sleeper
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
 st.set_page_config(page_title="Fantasy Football Analytics", page_icon="🏈", layout="wide")
 
-# ---------- styling ----------
+# ---------- look: dark, Sleeper-style ----------
+POS_COLORS = {"QB": "#ff4f81", "RB": "#22d3b6", "WR": "#58b6ff", "TE": "#ffb35c"}
+ACCENT, MUTED = "#00d4b4", "#8b93a7"
+
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap');
-h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"] {
-  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif !important; letter-spacing: .3px; }
-h1 { font-weight: 700 !important; text-transform: uppercase; }
-.stTabs button p { font-size: 1.15rem !important; font-weight: 600; text-transform: uppercase; }
-.cond { font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap');
+:root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #00d4b4;
+  --qb: #ff4f81; --rb: #22d3b6; --wr: #58b6ff; --te: #ffb35c; }
+.block-container { padding-top: 1.6rem !important; max-width: 1280px; }
+h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"], .num {
+  font-family: 'Poppins', 'Segoe UI', sans-serif !important; }
+h1 { font-weight: 800 !important; letter-spacing: -.5px; font-size: 2.1rem !important; }
+h1 span.hl { color: var(--accent); }
+h3 { font-weight: 700 !important; }
+.stTabs [data-baseweb="tab-list"] { gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.stTabs button { border-radius: 999px !important; padding: 6px 14px !important; background: var(--surface) !important; }
+.stTabs button[aria-selected="true"] { background: var(--accent) !important; }
+.stTabs button[aria-selected="true"] p { color: #0d1a18 !important; }
+.stTabs button p { font-size: .9rem !important; font-weight: 600; white-space: nowrap; }
+.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] { display: none; }
+[data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+[data-testid="stMetricValue"] { font-weight: 700; }
+.sub { color: var(--muted); font-size: .9rem; margin-top: -6px; }
+[data-baseweb="tag"], [data-baseweb="tag"] span { color: #0d1a18 !important; font-weight: 600; }
+[data-baseweb="tag"] span[role="presentation"], [data-baseweb="tag"] svg { color: #0d1a18 !important; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 10px; font-size: .8rem; color: #cfd5e3; margin: 2px 6px 2px 0; }
+.chip b { color: var(--accent); }
 
-/* at-a-glance cards */
-.gl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 4px 0 10px; }
-.gl-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 900px) { .gl-grid, .gl-grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.gl-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid rgba(128,128,128,.25); border-left: 6px solid var(--tc); background: rgba(128,128,128,.06);
-  min-width: 0; }
-.gl-card .hs { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; object-position: top;
-  background: rgba(128,128,128,.18); flex: none; }
-.gl-card .logo { width: 40px; height: 40px; flex: none; }
-.gl-txt { min-width: 0; }
-.gl-lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; opacity: .65; }
-.gl-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gl-meta { font-size: .8rem; opacity: .75; }
-.gl-pts { margin-left: auto; font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 700; line-height: 1; }
-.gl-pts small { display: block; font-size: .7rem; font-weight: 500; opacity: .6; text-align: right; }
-
-/* badges */
-.badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: .72rem; font-weight: 700;
+/* position pills and badges */
+.pos { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 6px;
+  font-size: .7rem; font-weight: 800; letter-spacing: .3px; color: #10131c; vertical-align: middle; }
+.pos-QB { background: var(--qb); } .pos-RB { background: var(--rb); } .pos-WR { background: var(--wr); }
+.pos-TE { background: var(--te); } .pos-FLEX { background: linear-gradient(90deg, var(--rb), var(--wr), var(--te)); }
+.badge { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: .68rem; font-weight: 800;
   text-transform: uppercase; letter-spacing: .4px; vertical-align: middle; }
-.b-Out { background: #d62728; color: #fff; }
-.b-Doubtful { background: #ff7f0e; color: #fff; }
-.b-Questionable { background: #f2c94c; color: #222; }
+.b-Out { background: #ff4d4d; color: #fff; } .b-Doubtful { background: #ff8a3d; color: #fff; }
+.b-Questionable { background: #ffd24d; color: #222; } .b-wind { background: #7aa7ff; color: #0e1424; }
 
-/* start/sit + profile cards */
-.ss-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 14px; }
-@media (max-width: 900px) { .ss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.ss-card { border-radius: 12px; overflow: hidden; border: 1px solid rgba(128,128,128,.25);
-  background: rgba(128,128,128,.05); position: relative; }
-.ss-card.best { box-shadow: 0 0 0 3px #2ca02c; }
-.ss-band { background: var(--tc); color: #fff; display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-.ss-band img { width: 26px; height: 26px; background: rgba(255,255,255,.9); border-radius: 50%; padding: 2px; }
+/* cards */
+.gl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
+.gl-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gl-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.gl-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--tc); }
+.gl-card .hs, .avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: top;
+  background: var(--surface2); flex: none; }
+.gl-card .logo { width: 44px; height: 44px; flex: none; }
+.gl-txt { min-width: 0; }
+.gl-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); font-weight: 600; }
+.gl-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-meta { font-size: .8rem; color: var(--muted); }
+.gl-pts { margin-left: auto; font-family: 'Poppins', sans-serif; font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.gl-pts small { display: block; font-size: .65rem; font-weight: 500; color: var(--muted); text-align: right; }
+.note { font-size: .85rem; color: #cfd5e3; margin: 0 0 8px; }
+
+/* start/sit */
+.ss-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; }
+.ss-card { border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
+.ss-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px rgba(0,212,180,.15); }
+.ss-band { background: var(--tc); color: #fff; display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+.ss-band img { width: 24px; height: 24px; background: rgba(255,255,255,.92); border-radius: 50%; padding: 2px; }
 .ss-band .badge { margin-left: auto; }
-.ss-body { padding: 12px 14px 14px; text-align: center; }
-.ss-body .hs { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; object-position: top;
-  background: rgba(128,128,128,.18); }
-.ss-name { font-weight: 700; font-size: 1.1rem; margin-top: 4px; }
-.ss-meta { font-size: .82rem; opacity: .75; }
-.ss-proj { font-family: 'Barlow Condensed', sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
-.ss-proj span { font-size: .8rem; font-weight: 500; opacity: .6; margin-left: 4px; }
-.range { position: relative; height: 10px; border-radius: 5px; background: rgba(128,128,128,.2); margin: 10px 4px 4px; }
-.range-bar { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: var(--tc); opacity: .55; }
-.range-dot { position: absolute; top: -4px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
-  background: var(--tc); border: 3px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
-.range-lbl { display: flex; justify-content: space-between; font-size: .75rem; opacity: .7; }
-.pick { position: absolute; top: 44px; right: 10px; background: #2ca02c; color: #fff; font-weight: 700;
-  font-size: .75rem; padding: 2px 8px; border-radius: 4px; letter-spacing: .5px; }
+.ss-body { padding: 14px; text-align: center; }
+.ss-body .hs { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
+.ss-name { font-weight: 700; font-size: 1.05rem; margin-top: 6px; }
+.ss-meta { font-size: .8rem; color: var(--muted); }
+.ss-proj { font-family: 'Poppins', sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
+.ss-proj span { font-size: .75rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.range { position: relative; height: 8px; border-radius: 4px; background: var(--surface2); margin: 12px 4px 4px; }
+.range-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); opacity: .45; }
+.range-dot { position: absolute; top: -5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
+  background: var(--accent); border: 3px solid #10131c; }
+.range-lbl { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); }
+.pick { position: absolute; top: 44px; right: 10px; background: var(--accent); color: #0d1a18; font-weight: 800;
+  font-size: .7rem; padding: 2px 8px; border-radius: 6px; letter-spacing: .5px; }
 
-/* profile header */
-.pf { display: flex; gap: 18px; align-items: center; border-radius: 12px; padding: 16px 20px; color: #fff;
-  background: linear-gradient(100deg, var(--tc) 0%, var(--tc) 55%, var(--tc2) 140%); flex-wrap: wrap; }
-.pf .hs { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; object-position: top;
-  background: rgba(255,255,255,.2); border: 3px solid rgba(255,255,255,.85); }
-.pf-name { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 700; line-height: 1;
-  text-transform: uppercase; }
+/* profile */
+.pf { display: flex; gap: 18px; align-items: center; border-radius: 18px; padding: 18px 22px; color: #fff; flex-wrap: wrap;
+  background: linear-gradient(110deg, var(--tc) 0%, color-mix(in srgb, var(--tc) 55%, #10131c) 70%, #10131c 100%); }
+.pf .hs { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; object-position: top;
+  background: rgba(255,255,255,.15); border: 3px solid rgba(255,255,255,.85); }
+.pf-name { font-family: 'Poppins', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
 .pf-sub { opacity: .9; margin-top: 4px; }
-.pf-logo { width: 80px; height: 80px; margin-left: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.pf-logo { width: 76px; height: 76px; margin-left: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
 .pf-stats { display: flex; gap: 22px; margin-top: 10px; flex-wrap: wrap; }
-.pf-stats div { font-family: 'Barlow Condensed', sans-serif; font-size: 1.6rem; font-weight: 700; line-height: 1; }
-.pf-stats small { display: block; font-family: inherit; font-size: .7rem; font-weight: 500; opacity: .8;
-  text-transform: uppercase; letter-spacing: .5px; }
+.pf-stats div { font-family: 'Poppins', sans-serif; font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.pf-stats small { display: block; font-family: inherit; font-size: .64rem; font-weight: 500; opacity: .8;
+  text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+
+/* lineup */
+.lu { display: grid; gap: 8px; margin: 6px 0 14px; }
+.lu-row { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); }
+.lu-row.empty { opacity: .6; }
+.lu-row .slot { width: 52px; flex: none; }
+.lu-row .hs { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); flex: none; }
+.lu-row .logo { width: 26px; height: 26px; flex: none; }
+.lu-name { font-weight: 700; min-width: 0; }
+.lu-name small { display: block; font-weight: 400; color: var(--muted); }
+.lu-pts { margin-left: auto; text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.lu-pts small { display: block; font-size: .66rem; font-weight: 500; color: var(--muted); }
+
+/* phones */
+@media (max-width: 900px) {
+  .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gl-grid.three { grid-template-columns: 1fr; }
+  .ss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .block-container { padding-left: 12px !important; padding-right: 12px !important; padding-top: 3.2rem !important; }
+  h1 { font-size: 1.5rem !important; }
+  .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .gl-grid.three { grid-template-columns: 1fr; }
+  .gl-card { padding: 9px 10px; gap: 8px; }
+  .gl-card .hs, .gl-card .logo { display: none; }
+  .gl-grid:not(.three) .gl-card { flex-wrap: wrap; }
+  .gl-grid:not(.three) .gl-pts { margin-left: 0; font-size: 1.35rem; flex-basis: 100%; }
+  .gl-grid:not(.three) .gl-pts small { display: inline; margin-left: 4px; }
+  .gl-name { font-size: .92rem; }
+  .gl-meta { font-size: .75rem; }
+  .ss-grid { grid-template-columns: 1fr; }
+  .pf { padding: 14px; gap: 12px; }
+  .pf .hs { width: 72px; height: 72px; }
+  .pf-name { font-size: 1.4rem; }
+  .pf-logo { display: none; }
+  .pf-stats { gap: 14px; }
+  .pf-stats div { font-size: 1.1rem; }
+  .lu-row { padding: 8px 10px; gap: 8px; }
+  .lu-row .logo { display: none; }
+  .lu-row .slot { width: 40px; }
+  .lu-pts { font-size: 1.25rem; }
+}
 </style>
 """, unsafe_allow_html=True)
 
-POS_COLORS = {"QB": "#e15759", "RB": "#59a14f", "WR": "#4e79a7", "TE": "#f28e2b"}
-STATUS_STYLE = {"Out": "background-color:#d62728;color:white", "Doubtful": "background-color:#ff7f0e;color:white",
-                "Questionable": "background-color:#f2c94c;color:#222"}
+STATUS_STYLE = {"Out": "background-color:#ff4d4d;color:white", "Doubtful": "background-color:#ff8a3d;color:white",
+                "Questionable": "background-color:#ffd24d;color:#222"}
+POS_STYLE = {p: f"color:{c};font-weight:800" for p, c in POS_COLORS.items()}
+
+
+def plot_style(fig, height=340, legend_below=True):
+    fig.update_layout(height=height, margin=dict(l=10, r=10, t=46, b=60 if legend_below else 30),
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      font=dict(color="#cfd5e3"), title_font=dict(family="Poppins", size=15))
+    fig.update_xaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
+    fig.update_yaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
+    if legend_below:
+        fig.update_layout(legend=dict(orientation="h", y=-0.24, x=0))
+    return fig
 
 
 # ---------- data ----------
@@ -98,18 +173,17 @@ def query(sql):
         return pd.read_sql(sql, con)
 
 
-@st.cache_data
-def load_metrics():
-    return json.loads(METRICS_PATH.read_text())
-
-
 teams = query("SELECT * FROM teams").set_index("team")
 proj = query("SELECT * FROM projections")
 breakouts = query("SELECT * FROM breakouts")
 usage = query("SELECT * FROM usage_weekly")
+weather = query("SELECT * FROM weather")
+id_map = query("SELECT * FROM id_map")
+acc = query("SELECT * FROM accuracy")
 season = int(proj["gameday"].str[:4].min())
 games_cur = query(f"SELECT * FROM player_weeks WHERE season = {season}")
-metrics = load_metrics()
+metrics = json.loads(METRICS_PATH.read_text())
+experiments = json.loads((METRICS_PATH.parent / "experiments.json").read_text())
 
 last_week = int(proj["last_completed_week"].iloc[0])
 next_week = int(proj["week"].min())
@@ -120,22 +194,35 @@ def team_attr(abbr, col, default=""):
     return teams[col].get(abbr, default) if abbr in teams.index else default
 
 
+def weather_text(roof, temp, wind):
+    if roof in ("dome", "closed"):
+        return "Indoors"
+    if pd.notna(wind):
+        return f"{temp:.0f}°F · {wind:.0f} mph"
+    return "Outdoors" if roof in ("outdoors", "open") else ""
+
+
+proj = proj.merge(weather, on="game_id", how="left")
+proj["weather"] = [weather_text(r, t, w) for r, t, w in zip(proj["roof"], proj["temp"], proj["wind"])]
+proj["windy"] = proj["wind"].fillna(0) >= 15
 for df in (proj, breakouts):
     df["color"] = df["team"].map(teams["team_color"]).fillna("#555")
     df["logo"] = df["team"].map(teams["logo"])
-
 proj["label"] = proj["name"] + " (" + proj["position"] + ", " + proj["team"] + ")"
 proj["matchup"] = proj.apply(lambda r: ("vs " if r["home"] else "@ ") + r["opp"], axis=1)
 proj["matchup_grade"] = pd.cut(proj["def_factor"], [0, 0.85, 1.15, 99],
                                labels=["Tough", "Neutral", "Good"]).astype(str)
 proj["status"] = proj["status"].fillna("")
 players = (proj.sort_values("ewm_ppr", ascending=False)
-               .drop_duplicates("player_id")[["player_id", "label", "name", "position", "team"]])
+               .drop_duplicates("player_id")[["player_id", "label", "name", "position", "team",
+                                              "headshot_url", "logo", "color"]])
 labels = players["label"].tolist()
 id_by_label = dict(zip(players["label"], players["player_id"]))
 label_by_id = dict(zip(players["player_id"], players["label"]))
+gsis_by_sleeper = dict(zip(id_map["sleeper_id"], id_map["player_id"]))
 
 
+# ---------- helpers ----------
 def html(s):
     """Render an HTML snippet. Lines are flattened so Streamlit doesn't read indentation as a code block."""
     st.markdown("".join(line.strip() for line in s.splitlines()), unsafe_allow_html=True)
@@ -145,22 +232,122 @@ def badge(status):
     return f'<span class="badge b-{status}">{status}</span>' if status else ""
 
 
+def wind_badge(r):
+    return f'<span class="badge b-wind">Wind {r["wind"]:.0f} mph</span>' if r.get("windy", False) else ""
+
+
+def pill(pos_):
+    return f'<span class="pos pos-{pos_}">{pos_}</span>'
+
+
 def week_row(pid, week):
     r = proj[(proj["player_id"] == pid) & (proj["week"] == week)]
     return r.iloc[0] if len(r) else None
 
 
+def load_example_team():
+    """A realistic mid-draft roster: one strong starter at each spot plus depth, not all stars."""
+    picks_by_pos = {"QB": [3, 14], "RB": [2, 9, 18, 27, 35], "WR": [4, 11, 20, 30, 38], "TE": [5, 15]}
+    team = []
+    for pos_, ranks in picks_by_pos.items():
+        pool = players[players["position"] == pos_]["label"].tolist()
+        team += [pool[r - 1] for r in ranks if r <= len(pool)]
+    st.session_state["team"] = team
+
+
+def init_from_url(key, param):
+    """Seed a multiselect from the page URL the first time it renders (for shareable links)."""
+    if key not in st.session_state:
+        ids = [i for i in st.query_params.get(param, "").split(",") if i in label_by_id]
+        st.session_state[key] = [label_by_id[i] for i in ids]
+
+
+def sync_url(param, chosen_labels):
+    ids = [id_by_label[l] for l in chosen_labels if l in id_by_label]
+    if ids:
+        st.query_params[param] = ",".join(ids)
+    elif param in st.query_params:
+        del st.query_params[param]
+
+
+@st.cache_data
+def ros_values(w0, w1, teams_n):
+    """Rest-of-season points and value over a replacement-level starter for every active player."""
+    r = (proj[proj["week"].between(w0, w1)].groupby("player_id")
+         .agg(ros=("proj", "sum"), games=("proj", "size")).reset_index())
+    r = players.merge(r, on="player_id", how="left").fillna({"ros": 0, "games": 0})
+    r["ppg"] = r["ros"] / r["games"].where(r["games"] > 0)
+    repl_rank = {"QB": teams_n, "RB": int(teams_n * 2.5), "WR": int(teams_n * 2.5), "TE": teams_n}
+    r["repl"] = 0.0
+    for pos_, n in repl_rank.items():
+        vals = r.loc[r["position"] == pos_, "ros"].sort_values(ascending=False).reset_index(drop=True)
+        r.loc[r["position"] == pos_, "repl"] = float(vals.iloc[min(n, len(vals) - 1)]) if len(vals) else 0.0
+    r["value"] = (r["ros"] - r["repl"]).clip(lower=0)
+    r = r.sort_values(["value", "ros"], ascending=False).reset_index(drop=True)
+    r["rank"] = r.index + 1
+    r["pos_rank"] = r["position"] + (r.groupby("position").cumcount() + 1).astype(str)
+    return r
+
+
+# ---------- Sleeper league connection ----------
+@st.cache_data(ttl=600, show_spinner=False)
+def sl_user(username):
+    return sleeper.find_user(username)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def sl_leagues(user_id, yr):
+    return sleeper.leagues_for(user_id, yr)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def sl_rosters(league_id):
+    return sleeper.league_rosters(league_id)
+
+
+def connect_league(league, user_id):
+    """Pull my roster and everyone's rostered players from a Sleeper league."""
+    rosters = sl_rosters(league["league_id"])
+    mine = sleeper.my_roster(rosters, user_id) or {}
+    my_ids = [gsis_by_sleeper.get(str(p)) for p in (mine.get("players") or [])]
+    st.session_state["team"] = [label_by_id[i] for i in my_ids if i in label_by_id]
+    st.session_state["league_info"] = {
+        "name": league.get("name", "My league"), "id": league["league_id"],
+        "teams": int(league.get("total_rosters") or 12), "ppr": sleeper.ppr_value(league),
+        "rostered": {gsis_by_sleeper.get(str(p)) for p in sleeper.rostered_ids(rosters)} - {None},
+        "mine": set(i for i in my_ids if i), "unmatched": sum(1 for i in my_ids if i not in label_by_id),
+    }
+
+
+def league():
+    return st.session_state.get("league_info")
+
+
+# reconnect automatically when the page is opened from a saved link
+if league() is None and st.query_params.get("sleeper") and st.query_params.get("league"):
+    try:
+        u = sl_user(st.query_params["sleeper"])
+        lg = next((x for x in sl_leagues(u["user_id"], season) if x["league_id"] == st.query_params["league"]), None)
+        if u and lg:
+            connect_league(lg, u["user_id"])
+    except Exception:
+        pass
+
+
 # ---------- header ----------
-st.title("Fantasy Football Analytics")
-st.caption(f"Full PPR · {season} season · stats through Week {last_week} · built on nflverse data")
+st.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
+chips = [f"Week <b>{next_week}</b> projections", "Full PPR", f"Stats through Week {last_week}"]
+if league():
+    chips.append(f"Connected: <b>{league()['name']}</b>")
+html(f'<div>{"".join(f"<span class=chip>{c}</span>" for c in chips)}</div>')
 
 wk = proj[(proj["week"] == next_week) & (proj["status"] != "Out")]
 cards = []
-for pos in ["QB", "RB", "WR", "TE"]:
-    r = wk[wk["position"] == pos].nlargest(1, "proj").iloc[0]
-    cards.append(f"""<div class="gl-card" style="--tc:{r['color']}">
+for pos_ in ["QB", "RB", "WR", "TE"]:
+    r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
+    cards.append(f"""<div class="gl-card" style="--tc:{POS_COLORS[pos_]}">
       <img class="hs" src="{r['headshot_url']}"><div class="gl-txt">
-      <div class="gl-lbl">Top {pos} · Week {next_week}</div><div class="gl-name">{r['name']}</div>
+      <div class="gl-lbl">{pill(pos_)} Top · Wk {next_week}</div><div class="gl-name">{r['name']}</div>
       <div class="gl-meta">{r['team']} {r['matchup']} {badge(r['status'])}</div></div>
       <div class="gl-pts">{r['proj']:.1f}<small>proj</small></div></div>""")
 html(f'<div class="gl-grid">{"".join(cards)}</div>')
@@ -169,47 +356,53 @@ smash = wk[wk["proj"] >= 12].nlargest(1, "def_factor").iloc[0]
 bo = breakouts.iloc[0]
 hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
 html(f"""<div class="gl-grid three">
-  <div class="gl-card" style="--tc:{smash['color']}"><img class="hs" src="{smash['headshot_url']}"><div class="gl-txt">
+  <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{smash['headshot_url']}"><div class="gl-txt">
     <div class="gl-lbl">Best matchup</div><div class="gl-name">{smash['name']}</div>
     <div class="gl-meta">{smash['matchup']} allows {(smash['def_factor'] - 1) * 100:+.0f}% to {smash['position']}s</div></div></div>
-  <div class="gl-card" style="--tc:{bo['color']}"><img class="hs" src="{bo['headshot_url']}"><div class="gl-txt">
+  <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{bo['headshot_url']}"><div class="gl-txt">
     <div class="gl-lbl">Top breakout candidate</div><div class="gl-name">{bo['name']}</div>
     <div class="gl-meta">Targets + carries {bo['opps_before']:.1f} → {bo['opps_last3']:.1f} per game</div></div></div>
-  <div class="gl-card" style="--tc:{hi['color']}"><img class="logo" src="{hi['logo']}"><div class="gl-txt">
+  <div class="gl-card" style="--tc:{ACCENT}"><img class="logo" src="{hi['logo']}"><div class="gl-txt">
     <div class="gl-lbl">Highest-scoring offense</div><div class="gl-name">{team_attr(hi['team'], 'team_name', hi['team'])}</div>
     <div class="gl-meta">Vegas expects {hi['implied_total']:.1f} pts {hi['matchup']}</div></div></div>
 </div>""")
 
+notes = []
 if not injury_posted:
-    st.caption(f"🩺 The Week {next_week} injury report isn't final yet. Statuses update automatically "
-               "Saturday and Sunday mornings.")
+    notes.append(f'<span class="badge b-Questionable">Injuries</span> The Week {next_week} injury report isn\'t final '
+                 "yet. Statuses update automatically Saturday and Sunday mornings.")
+windy = wk[wk["windy"]].drop_duplicates("game_id")
+if len(windy):
+    games_txt = ", ".join(f"{r['team']} {r['matchup']} ({r['wind']:.0f} mph)" for _, r in windy.iterrows())
+    notes.append(f'<span class="badge b-wind">Wind watch</span> {games_txt}. In backtests, QBs in 15+ mph wind '
+                 "scored about 3 points below projection.")
+for n in notes:
+    html(f'<div class="note">{n}</div>')
 
 
-# ---------- player profile (used in two places) ----------
+# ---------- player profile ----------
 def render_profile(pid, key):
-    info = proj[proj["player_id"] == pid].iloc[0]
+    info = players[players["player_id"] == pid].iloc[0]
     tc = info["color"]
-    tc2 = team_attr(info["team"], "team_color2", tc)
     log = games_cur[games_cur["player_id"] == pid].sort_values("week")
     u = usage[usage["player_id"] == pid].sort_values("week")
     fut = proj[proj["player_id"] == pid].sort_values("week")
-
-    # season rank by points per game among players at the position with 3+ games
     pos_ppg = (games_cur[games_cur["position"] == info["position"]].groupby("player_id")["ppr"]
                .agg(["mean", "size"]).query("size >= 3")["mean"].sort_values(ascending=False))
     rank = (list(pos_ppg.index).index(pid) + 1) if pid in pos_ppg.index else None
     ppg = log["ppr"].mean() if len(log) else 0
     nxt = fut.iloc[0]
+    tags = (badge(nxt["status"]) if nxt["week"] == next_week else "") + wind_badge(nxt)
 
-    html(f"""<div class="pf" style="--tc:{tc};--tc2:{tc2}">
+    html(f"""<div class="pf" style="--tc:{tc}">
       <img class="hs" src="{info['headshot_url']}">
-      <div><div class="pf-name">{info['name']} {badge(nxt['status'] if nxt['week'] == next_week else '')}</div>
-        <div class="pf-sub">{info['position']} · {team_attr(info['team'], 'team_name', info['team'])}</div>
+      <div><div class="pf-name">{info['name']} {tags}</div>
+        <div class="pf-sub">{pill(info['position'])} {team_attr(info['team'], 'team_name', info['team'])}</div>
         <div class="pf-stats">
-          <div>{ppg:.1f}<small>PPR per game</small></div>
+          <div>{ppg:.1f}<small>PPR / game</small></div>
           <div>{info['position']}{rank if rank else '–'}<small>Rank (per game)</small></div>
-          <div>{log['ppr'].sum():.0f}<small>Season points</small></div>
-          <div>{nxt['proj']:.1f}<small>Week {int(nxt['week'])} {nxt['matchup']}</small></div>
+          <div>{log['ppr'].sum():.0f}<small>Season pts</small></div>
+          <div>{nxt['proj']:.1f}<small>Wk {int(nxt['week'])} {nxt['matchup']}</small></div>
           <div>{fut[fut['week'] <= FANTASY_LAST_WEEK]['proj'].sum():.0f}<small>Rest of season</small></div>
         </div></div>
       <img class="pf-logo" src="{info['logo']}">
@@ -218,103 +411,304 @@ def render_profile(pid, key):
     c1, c2 = st.columns([3, 2])
     with c1:
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=log["week"], y=log["ppr"], name="Actual", marker_color=tc,
+        fig.add_trace(go.Bar(x=log["week"], y=log["ppr"], name="Actual", marker_color=POS_COLORS[info["position"]],
                              customdata=log["opponent_team"],
                              hovertemplate="Week %{x} vs %{customdata}: %{y:.1f} pts<extra></extra>"))
         if len(u):
             fig.add_trace(go.Scatter(x=u["week"], y=u["xfp"], name="Expected (usage)", mode="lines+markers",
-                                     line=dict(color="#888", width=2, dash="dot")))
+                                     line=dict(color="#cfd5e3", width=2, dash="dot")))
         fig.add_trace(go.Scatter(
             x=fut["week"], y=fut["proj"], name="Projected", mode="markers",
-            marker=dict(color=tc, size=11, symbol="diamond", line=dict(color="white", width=1)),
+            marker=dict(color=ACCENT, size=10, symbol="diamond"),
             error_y=dict(type="data", symmetric=False, array=fut["ceiling"] - fut["proj"],
-                         arrayminus=fut["proj"] - fut["floor"], color="rgba(128,128,128,.35)",
-                         thickness=6, width=0),
+                         arrayminus=fut["proj"] - fut["floor"], color="rgba(0,212,180,.25)", thickness=6, width=0),
             customdata=fut[["matchup", "floor", "ceiling"]],
             hovertemplate="Week %{x} %{customdata[0]}: %{y:.1f} proj (%{customdata[1]:.1f} to "
                           "%{customdata[2]:.1f})<extra></extra>"))
         if ppg:
-            fig.add_hline(y=ppg, line=dict(color="rgba(128,128,128,.6)", dash="dash"),
+            fig.add_hline(y=ppg, line=dict(color="rgba(207,213,227,.4)", dash="dash"),
                           annotation_text=f"Season avg {ppg:.1f}", annotation_position="top right")
-        fig.update_layout(title="Season so far and projections ahead", height=360,
-                          margin=dict(l=10, r=10, t=50, b=60),
-                          xaxis=dict(dtick=1, title="Week", range=[0.4, max(fut["week"].max(), 18) + 0.6]),
-                          yaxis_title="PPR points", legend=dict(orientation="h", y=-0.22, x=0))
-        st.plotly_chart(fig, width="stretch", key=f"{key}_pts")
+        fig.update_layout(title="Season so far and projections ahead", yaxis_title="PPR points",
+                          xaxis=dict(dtick=1, title="Week", range=[0.4, max(fut["week"].max(), 18) + 0.6]))
+        st.plotly_chart(plot_style(fig, 360), width="stretch", key=f"{key}_pts")
     with c2:
         fig = go.Figure()
         if info["position"] != "QB":
             fig.add_trace(go.Scatter(x=u["week"], y=u["target_share"] * 100, name="Target share",
-                                     mode="lines+markers", line=dict(color=tc, width=3)))
+                                     mode="lines+markers", line=dict(color=POS_COLORS["WR"], width=3)))
         if info["position"] in ("RB", "QB"):
             fig.add_trace(go.Scatter(x=u["week"], y=u["carry_share"] * 100, name="Carry share",
-                                     mode="lines+markers", line=dict(color="#888", width=3)))
-        fig.update_layout(title="Share of team targets and carries", height=360, margin=dict(l=10, r=10, t=50, b=60),
-                          xaxis=dict(dtick=1, title="Week"), yaxis=dict(title="% of team", range=[0, 105]),
-                          legend=dict(orientation="h", y=-0.22, x=0))
-        st.plotly_chart(fig, width="stretch", key=f"{key}_use")
+                                     mode="lines+markers", line=dict(color=POS_COLORS["RB"], width=3)))
+        fig.add_trace(go.Scatter(x=log["week"], y=log["snap_pct"] * 100, name="Snap share",
+                                 mode="lines", line=dict(color="#8b93a7", width=2, dash="dot")))
+        fig.update_layout(title="Usage: share of team snaps, targets, carries",
+                          xaxis=dict(dtick=1, title="Week"), yaxis=dict(title="% of team", range=[0, 105]))
+        st.plotly_chart(plot_style(fig, 360), width="stretch", key=f"{key}_use")
 
-    pos = info["position"]
-    cols = {"week": "Wk", "opponent_team": "Opp", "ppr": "PPR"}
-    if pos == "QB":
+    pos_ = info["position"]
+    cols = {"week": "Wk", "opponent_team": "Opp", "ppr": "PPR", "snap_pct": "Snap %", "rz_opps": "RZ opps"}
+    if pos_ == "QB":
         cols.update({"completions": "Cmp", "attempts": "Att", "passing_yards": "Pass Yds",
                      "passing_tds": "Pass TD", "passing_interceptions": "INT", "carries": "Rush",
                      "rushing_yards": "Rush Yds", "rushing_tds": "Rush TD"})
-    elif pos == "RB":
+    elif pos_ == "RB":
         cols.update({"carries": "Rush", "rushing_yards": "Rush Yds", "rushing_tds": "Rush TD",
                      "targets": "Tgt", "receptions": "Rec", "receiving_yards": "Rec Yds", "receiving_tds": "Rec TD"})
     else:
         cols.update({"targets": "Tgt", "receptions": "Rec", "receiving_yards": "Rec Yds",
                      "receiving_tds": "Rec TD", "target_share": "Tgt Share"})
     gl = log[list(cols)].rename(columns=cols).sort_values("Wk", ascending=False)
+    gl["Snap %"] = (gl["Snap %"] * 100).round(0).fillna(0).astype(int).astype(str) + "%"
+    gl["RZ opps"] = gl["RZ opps"].astype(int)
     if "Tgt Share" in gl:
         gl["Tgt Share"] = (gl["Tgt Share"] * 100).round(0).astype(int).astype(str) + "%"
     st.markdown("**Game log**")
-    st.dataframe(gl, hide_index=True, width="stretch",
-                 column_config={"PPR": st.column_config.NumberColumn(format="%.1f")})
+    st.dataframe(gl, hide_index=True, width="stretch", column_config={"PPR": st.column_config.NumberColumn(format="%.1f")})
 
 
 # ---------- tabs ----------
-tab_proj, tab_player, tab_ss, tab_bo, tab_trade, tab_model = st.tabs(
-    ["Projections", "Players", "Start / Sit", "Breakouts", "Trade Analyzer", "Model"])
+(tab_proj, tab_rank, tab_team, tab_player, tab_ss, tab_bo, tab_trade, tab_acc, tab_model) = st.tabs(
+    ["Projections", "Rankings", "My Team", "Players", "Start / Sit", "Breakouts", "Trades", "Accuracy", "Model"])
 
 with tab_proj:
     c1, c2, c3 = st.columns([1, 2, 2])
     week = c1.selectbox("Week", sorted(proj["week"].unique()), key="pw")
-    pos = c2.multiselect("Position", ["QB", "RB", "WR", "TE"], default=["QB", "RB", "WR", "TE"])
-    search = c3.text_input("Search player", "")
-
-    t = proj[(proj["week"] == week) & proj["position"].isin(pos)]
+    pos_sel = c2.multiselect("Position", ["QB", "RB", "WR", "TE"], default=["QB", "RB", "WR", "TE"])
+    search = c3.text_input("Search player", "", placeholder="Name")
+    t = proj[(proj["week"] == week) & proj["position"].isin(pos_sel)]
     if search:
         t = t[t["name"].str.contains(search, case=False)]
     t = t.sort_values("proj", ascending=False).reset_index(drop=True)
     t["rank"] = t["position"] + (t.groupby("position").cumcount() + 1).astype(str)
-    show = t[["headshot_url", "logo", "rank", "name", "status", "matchup", "matchup_grade",
+    show = t[["headshot_url", "rank", "name", "position", "status", "matchup", "matchup_grade", "weather",
               "implied_total", "floor", "proj", "ceiling"]]
-    styled = show.style.map(lambda s: STATUS_STYLE.get(s, ""), subset=["status"]).map(
-        lambda g: {"Good": "color:#2ca02c;font-weight:600", "Tough": "color:#d62728;font-weight:600"}.get(g, ""),
-        subset=["matchup_grade"])
-
-    st.caption("Click a row to open that player's profile below the table.")
+    styled = (show.style.map(lambda s: STATUS_STYLE.get(s, ""), subset=["status"])
+              .map(lambda p: POS_STYLE.get(p, ""), subset=["position"])
+              .map(lambda g: {"Good": "color:#22d3b6;font-weight:700", "Tough": "color:#ff4f81;font-weight:700"}.get(g, ""),
+                   subset=["matchup_grade"])
+              .map(lambda w: "color:#7aa7ff;font-weight:700" if "mph" in w and int(w.split("·")[1].split()[0]) >= 15 else "",
+                   subset=["weather"]))
+    st.caption("Tap a row to open that player's profile below the table.")
     sel = st.dataframe(
-        styled, hide_index=True, width="stretch", height=520, on_select="rerun",
+        styled, hide_index=True, width="stretch", height=540, on_select="rerun",
         selection_mode="single-row", key="proj_table",
         column_config={
             "headshot_url": st.column_config.ImageColumn("", width="small"),
-            "logo": st.column_config.ImageColumn("", width="small"),
-            "rank": "Rank", "name": "Player", "status": "Status", "matchup": "Opp",
-            "matchup_grade": "Matchup",
+            "rank": "Rank", "name": "Player", "position": "Pos", "status": "Status", "matchup": "Opp",
+            "matchup_grade": "Matchup", "weather": "Weather",
             "implied_total": st.column_config.NumberColumn("Team implied", format="%.1f",
                                                            help="Points Vegas expects this team to score"),
             "floor": st.column_config.NumberColumn("Floor", format="%.1f", help="15th percentile outcome"),
             "proj": st.column_config.ProgressColumn("Projection", format="%.1f", min_value=0,
-                                                    max_value=float(proj["proj"].max())),
+                                                    max_value=float(proj["proj"].max()), color="#00d4b4"),
             "ceiling": st.column_config.NumberColumn("Ceiling", format="%.1f", help="85th percentile outcome"),
         })
     rows = sel.selection.rows if sel else []
     if rows:
         st.divider()
         render_profile(t.iloc[rows[0]]["player_id"], "proj_pf")
+
+with tab_rank:
+    st.subheader("Rest-of-season rankings")
+    st.markdown('<div class="sub">Ranked by value: projected points above a replacement-level starter at each '
+                'position. Use it for trades and waiver decisions.</div>', unsafe_allow_html=True)
+    weeks = sorted(proj["week"].unique())
+    end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
+    c1, c2, c3 = st.columns([3, 1, 2])
+    rw0, rw1 = c1.slider("Weeks", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default), key="rk_w")
+    sizes = [8, 10, 12, 14]
+    default_n = league()["teams"] if league() and league()["teams"] in sizes else 12
+    rk_n = c2.selectbox("League size", sizes, index=sizes.index(default_n), key="rk_n")
+    rk_pos = c3.multiselect("Position", ["QB", "RB", "WR", "TE"], default=["QB", "RB", "WR", "TE"], key="rk_pos")
+    rk = ros_values(rw0, rw1, rk_n)
+    rk = rk[rk["position"].isin(rk_pos)].copy()
+    if league():
+        rk["owner"] = rk["player_id"].map(
+            lambda i: "Mine" if i in league()["mine"] else ("Taken" if i in league()["rostered"] else "Available"))
+        if st.toggle(f"Only show players available in {league()['name']}", key="rk_avail"):
+            rk = rk[rk["owner"] == "Available"]
+    cols = ["headshot_url", "rank", "pos_rank", "name", "position", "team", "games", "ppg", "ros", "value"]
+    if league():
+        cols.append("owner")
+    styled = (rk[cols].head(300).style.map(lambda p: POS_STYLE.get(p, ""), subset=["position"])
+              .map(lambda o: {"Available": "color:#22d3b6;font-weight:700", "Mine": "color:#ffb35c;font-weight:700"}.get(o, ""),
+                   subset=["owner"] if league() else []))
+    st.dataframe(styled, hide_index=True, width="stretch", height=620, column_config={
+        "headshot_url": st.column_config.ImageColumn("", width="small"),
+        "rank": "Rank", "pos_rank": "Pos rank", "name": "Player", "position": "Pos", "team": "Team",
+        "games": st.column_config.NumberColumn("Games left", format="%d"),
+        "ppg": st.column_config.NumberColumn("Pts / game", format="%.1f"),
+        "ros": st.column_config.NumberColumn("ROS points", format="%.1f"),
+        "value": st.column_config.ProgressColumn("Value", format="%.1f", min_value=0,
+                                                 max_value=float(max(rk["value"].max(), 1)) if len(rk) else 1.0,
+                                                 color="#00d4b4",
+                                                 help="Rest-of-season points above a replacement-level starter"),
+        "owner": "League status",
+    })
+    if not league():
+        st.caption("Connect your Sleeper league in the My Team tab to see who's available.")
+
+with tab_team:
+    st.subheader("My Team")
+    with st.container(border=True):
+        st.markdown("**Import from Sleeper** · pulls your roster and your league's waiver wire")
+        c1, c2 = st.columns([2, 3])
+        if "sl_user" not in st.session_state:
+            st.session_state["sl_user"] = st.query_params.get("sleeper", "")
+        uname = c1.text_input("Sleeper username", key="sl_user", placeholder="Your Sleeper username")
+        if uname:
+            try:
+                user = sl_user(uname)
+                if not user:
+                    c2.warning(f"No Sleeper account named \"{uname}\". Check the spelling.")
+                else:
+                    lgs = sl_leagues(user["user_id"], season)
+                    if not lgs:
+                        c2.info(f"No {season} NFL leagues found for {uname}.")
+                    else:
+                        names = {lg["league_id"]: lg.get("name", "League") for lg in lgs}
+                        ids = list(names)
+                        start = ids.index(st.query_params["league"]) if st.query_params.get("league") in ids else 0
+                        lid = c2.selectbox("League", ids, index=start, format_func=names.get, key="sl_league")
+                        chosen = next(lg for lg in lgs if lg["league_id"] == lid)
+                        if c2.button("Import roster", type="primary", on_click=connect_league,
+                                     args=(chosen, user["user_id"])):
+                            st.query_params["sleeper"] = uname
+                            st.query_params["league"] = lid
+            except sleeper.SleeperError as e:
+                c2.error(str(e))
+        if league():
+            lg = league()
+            extra = f" {lg['unmatched']} roster spots (kickers, defenses, or new players) aren't projected here." \
+                if lg["unmatched"] else ""
+            st.success(f"Connected to **{lg['name']}** ({lg['teams']} teams).{extra}")
+            if lg["ppr"] != 1.0:
+                st.caption(f"Heads up: your league gives {lg['ppr']:g} points per reception. Projections here are full PPR, "
+                           "so pass catchers will look a bit better than they score in your league.")
+
+    init_from_url("team", "team")
+    c1, c2 = st.columns([4, 1])
+    roster = c1.multiselect("Your roster", labels, key="team", max_selections=25, placeholder="Add your players...")
+    c2.button("Load example team", width="stretch", on_click=load_example_team)
+    sync_url("team", roster)
+    t_week = st.selectbox("Week", sorted(proj["week"].unique()), key="team_week")
+
+    if not roster:
+        st.info("Import from Sleeper, add players by hand, or load the example team to see your optimal lineup.")
+    else:
+        ids = [id_by_label[l] for l in roster]
+        avail = proj[proj["player_id"].isin(ids) & (proj["week"] == t_week)].copy()
+        on_bye = [label_by_id[i] for i in ids if i not in set(avail["player_id"])]
+        out = avail[avail["status"] == "Out"]
+        avail = avail[avail["status"] != "Out"].sort_values("proj", ascending=False)
+
+        slots = [("QB", ["QB"]), ("RB", ["RB"]), ("RB", ["RB"]), ("WR", ["WR"]), ("WR", ["WR"]),
+                 ("TE", ["TE"]), ("FLEX", ["RB", "WR", "TE"])]
+        used, lineup = set(), []
+        for slot, elig in slots:
+            pool = avail[avail["position"].isin(elig) & ~avail["player_id"].isin(used)]
+            if len(pool):
+                r = pool.iloc[0]
+                used.add(r["player_id"])
+                lineup.append((slot, r))
+            else:
+                lineup.append((slot, None))
+        bench = avail[~avail["player_id"].isin(used)]
+
+        a, b, c = st.columns(3)
+        a.metric("Projected points", f"{sum(r['proj'] for _, r in lineup if r is not None):.1f}")
+        b.metric("Floor", f"{sum(r['floor'] for _, r in lineup if r is not None):.1f}")
+        c.metric("Ceiling", f"{sum(r['ceiling'] for _, r in lineup if r is not None):.1f}")
+
+        rows_html = []
+        for slot, r in lineup:
+            if r is None:
+                rows_html.append(f'<div class="lu-row empty"><span class="slot">{pill(slot)}</span>'
+                                 '<span>No eligible player this week</span></div>')
+                continue
+            rows_html.append(f"""<div class="lu-row"><span class="slot">{pill(slot)}</span>
+              <img class="hs" src="{r['headshot_url']}"><img class="logo" src="{r['logo']}">
+              <div class="lu-name">{r['name']} {badge(r['status'])}{wind_badge(r)}<small>{r['position']} · {r['matchup']} ·
+              {r['matchup_grade']} matchup</small></div>
+              <div class="lu-pts">{r['proj']:.1f}<small>{r['floor']:.1f} to {r['ceiling']:.1f}</small></div></div>""")
+        html(f'<div class="lu">{"".join(rows_html)}</div>')
+
+        calls = []
+        for slot, r in lineup:
+            if r is None:
+                continue
+            elig = ["RB", "WR", "TE"] if slot == "FLEX" else [slot]
+            alt = bench[bench["position"].isin(elig)]
+            if len(alt) and r["proj"] - alt.iloc[0]["proj"] < 1.5:
+                calls.append(f"**{slot}:** {r['name']} ({r['proj']:.1f}) over {alt.iloc[0]['name']} "
+                             f"({alt.iloc[0]['proj']:.1f})")
+        alerts = []
+        if on_bye:
+            alerts.append("No game this week: " + ", ".join(on_bye))
+        if len(out):
+            alerts.append("Ruled out: " + ", ".join(out["name"]))
+        q = avail[avail["status"].isin(["Questionable", "Doubtful"])]
+        if len(q):
+            alerts.append("Check before kickoff: " + ", ".join(q["name"] + " (" + q["status"] + ")"))
+        w_ = avail[avail["windy"] & avail["position"].isin(["QB", "WR", "TE"])]
+        if len(w_):
+            alerts.append("Windy game forecast: " + ", ".join(w_["name"] + f" ({w_['wind'].iloc[0]:.0f} mph)"))
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Close calls**")
+            if calls:
+                for x in calls:
+                    st.write(x)
+                st.caption("Compare them side by side in the Start / Sit tab.")
+            else:
+                st.caption("No close calls. Every starter is 1.5+ points ahead of your bench.")
+            if alerts:
+                st.markdown("**Alerts**")
+                for x in alerts:
+                    st.write(x)
+        with c2:
+            st.markdown("**Bench**")
+            if len(bench):
+                st.dataframe(bench[["name", "position", "matchup", "status", "proj"]], hide_index=True, width="stretch",
+                             column_config={"name": "Player", "position": "Pos", "matchup": "Opp", "status": "Status",
+                                            "proj": st.column_config.NumberColumn("Proj", format="%.1f")})
+            else:
+                st.caption("Nobody on your bench this week.")
+
+        # waiver targets
+        weakest = {}
+        for slot, r in lineup:
+            if r is not None:
+                for p_ in (["RB", "WR", "TE"] if slot == "FLEX" else [slot]):
+                    if p_ not in weakest or r["proj"] < weakest[p_][1]:
+                        weakest[p_] = (r["name"], r["proj"])
+        pool = proj[(proj["week"] == t_week) & ~proj["player_id"].isin(ids) & (proj["status"] != "Out")]
+        if league():
+            st.markdown(f"**Best available in {league()['name']}**")
+            pool = pool[~pool["player_id"].isin(league()["rostered"])]
+        else:
+            st.markdown("**Waiver targets that would start for you**")
+            pool = pool[pool["player_id"].isin(breakouts["player_id"])]
+        pool = pool.merge(breakouts[["player_id", "breakout_score"]], on="player_id", how="left")
+        rows_w = []
+        for _, r in pool.sort_values("proj", ascending=False).iterrows():
+            w = weakest.get(r["position"])
+            if w is None or r["proj"] > w[1]:
+                rows_w.append({"Player": f"{r['name']} ({r['position']}, {r['team']})", "Week proj": r["proj"],
+                               "Would replace": f"{w[0]} ({w[1]:.1f})" if w else "Open slot",
+                               "Breakout score": r["breakout_score"]})
+            if len(rows_w) == 8:
+                break
+        if rows_w:
+            st.dataframe(pd.DataFrame(rows_w), hide_index=True, width="stretch",
+                         column_config={"Week proj": st.column_config.NumberColumn(format="%.1f"),
+                                        "Breakout score": st.column_config.NumberColumn(format="%.1f")})
+            if not league():
+                st.caption("Breakout candidates not on your roster. Import your Sleeper league to see only players "
+                           "who are actually available.")
+        else:
+            st.caption("Nobody available projects higher than your current starters this week.")
 
 with tab_player:
     pick = st.selectbox("Find a player", labels, index=0, key="pf_pick")
@@ -324,8 +718,10 @@ with tab_ss:
     st.subheader("Who should I start?")
     c1, c2 = st.columns([1, 3])
     ss_week = c1.selectbox("Week", sorted(proj["week"].unique()), key="ssw")
-    picks = c2.multiselect("Pick 2 to 4 players", labels, max_selections=4, placeholder="Start typing a name...")
-
+    init_from_url("ss_picks", "ss")
+    picks = c2.multiselect("Pick 2 to 4 players", labels, max_selections=4, key="ss_picks",
+                           placeholder="Start typing a name...")
+    sync_url("ss", picks)
     if len(picks) < 2:
         st.info("Choose at least two players to compare.")
     else:
@@ -342,19 +738,20 @@ with tab_ss:
             cards_html = []
             for _, r in df.sort_values("proj", ascending=False).iterrows():
                 f, p, c = r["floor"] / scale * 100, r["proj"] / scale * 100, r["ceiling"] / scale * 100
-                cards_html.append(f"""<div class="ss-card {'best' if r['player_id'] == best_id else ''}" style="--tc:{r['color']}">
+                best = r["player_id"] == best_id
+                cards_html.append(f"""<div class="ss-card {'best' if best else ''}" style="--tc:{r['color']}">
                   <div class="ss-band"><img src="{r['logo']}">{team_attr(r['team'], 'team_nick', r['team'])}{badge(r['status'])}</div>
-                  {'<div class="pick">START</div>' if r['player_id'] == best_id else ''}
+                  {'<div class="pick">START</div>' if best else ''}
                   <div class="ss-body"><img class="hs" src="{r['headshot_url']}">
                     <div class="ss-name">{r['name']}</div>
-                    <div class="ss-meta">{r['position']} · {r['matchup']} · {r['matchup_grade']} matchup</div>
+                    <div class="ss-meta">{pill(r['position'])} {r['matchup']} · {r['matchup_grade']} matchup</div>
+                    <div class="ss-meta">{r['weather']} {wind_badge(r)}</div>
                     <div class="ss-proj">{r['proj']:.1f}<span>proj</span></div>
                     <div class="range"><div class="range-bar" style="left:{f}%;width:{c - f}%"></div>
                       <div class="range-dot" style="left:{p}%"></div></div>
                     <div class="range-lbl"><span>Floor {r['floor']:.1f}</span><span>Ceiling {r['ceiling']:.1f}</span></div>
                   </div></div>""")
             html(f'<div class="ss-grid" style="--n:{len(df)}">{"".join(cards_html)}</div>')
-
             if len(live) >= 2:
                 safe = live.loc[live["floor"].idxmax()]
                 boom = live.loc[live["ceiling"].idxmax()]
@@ -362,111 +759,175 @@ with tab_ss:
                 gap = top2.iloc[0] - top2.iloc[1]
                 st.write("")
                 if gap < 1.5 and safe["player_id"] != boom["player_id"]:
-                    st.info(f"**It's close** ({gap:.1f} points apart). Favored to win your matchup? "
-                            f"Lean **{safe['name']}** for the safer floor. Underdog? Lean **{boom['name']}** "
-                            "for the higher ceiling.")
+                    st.info(f"**It's close** ({gap:.1f} points apart). Favored to win your matchup? Lean "
+                            f"**{safe['name']}** for the safer floor. Underdog? Lean **{boom['name']}** for upside.")
                 else:
                     st.success(f"**Start {live.loc[live['proj'].idxmax(), 'name']}.** "
                                f"Projected {gap:.1f} points ahead of the next option.")
             if (df["status"] == "Questionable").any():
                 st.caption("Questionable players usually play, but check news before kickoff.")
+            st.caption("Copy this page's link to share this comparison.")
 
 with tab_bo:
     st.subheader("Breakout detector")
-    st.write("Fantasy points bounce around week to week, but **targets and carries are sticky**. "
-             "This ranks players whose usage jumped over their last 3 games, plus players whose "
-             "points haven't caught up to their usage yet. **xFP** = expected fantasy points from "
-             "opportunities alone.")
-    bpos = st.radio("Position", ["All", "QB", "RB", "WR", "TE"], horizontal=True, key="bpos")
+    st.markdown('<div class="sub">Fantasy points bounce around week to week, but targets and carries are sticky. '
+                'This ranks players whose usage jumped over their last 3 games, plus players whose points haven\'t '
+                'caught up to their usage yet. xFP = expected fantasy points from opportunities alone.</div>',
+                unsafe_allow_html=True)
+    c1, c2 = st.columns([3, 2])
+    bpos = c1.radio("Position", ["All", "QB", "RB", "WR", "TE"], horizontal=True, key="bpos")
     b = breakouts if bpos == "All" else breakouts[breakouts["position"] == bpos]
+    if league() and c2.toggle(f"Only available in {league()['name']}", key="bo_avail"):
+        b = b[~b["player_id"].isin(league()["rostered"])]
     b = b.head(25).copy()
     b["usage"] = b.apply(lambda r: f"{r['opps_before']:.1f} → {r['opps_last3']:.1f}", axis=1)
     b["signal"] = b.apply(lambda r: " · ".join(
-        s for s, ok in [("Usage spike", r["usage_change"] >= 3), ("Due for points", r["points_gap"] >= 3)] if ok),
-        axis=1)
+        s for s, ok in [("Usage spike", r["usage_change"] >= 3), ("Due for points", r["points_gap"] >= 3)] if ok), axis=1)
     sel = st.dataframe(
-        b[["headshot_url", "logo", "name", "position", "usage", "xfp_before", "xfp_last3", "ppr_last3",
-           "signal", "breakout_score"]],
-        hide_index=True, width="stretch", height=480, on_select="rerun", selection_mode="single-row",
-        key="bo_table",
+        b[["headshot_url", "name", "position", "team", "usage", "xfp_before", "xfp_last3", "ppr_last3",
+           "signal", "breakout_score"]].style.map(lambda p: POS_STYLE.get(p, ""), subset=["position"]),
+        hide_index=True, width="stretch", height=480, on_select="rerun", selection_mode="single-row", key="bo_table",
         column_config={
             "headshot_url": st.column_config.ImageColumn("", width="small"),
-            "logo": st.column_config.ImageColumn("", width="small"),
-            "name": "Player", "position": "Pos",
+            "name": "Player", "position": "Pos", "team": "Team",
             "usage": st.column_config.TextColumn("Targets + carries / game", help="Earlier this season → last 3 games"),
             "xfp_before": st.column_config.NumberColumn("xFP before", format="%.1f"),
             "xfp_last3": st.column_config.NumberColumn("xFP last 3", format="%.1f"),
             "ppr_last3": st.column_config.NumberColumn("Actual last 3", format="%.1f"),
             "signal": "Signal",
-            "breakout_score": st.column_config.ProgressColumn(
-                "Breakout score", format="%.1f", min_value=0,
-                max_value=float(max(breakouts["breakout_score"].max(), 1))),
+            "breakout_score": st.column_config.ProgressColumn("Breakout score", format="%.1f", min_value=0,
+                                                              max_value=float(max(breakouts["breakout_score"].max(), 1)),
+                                                              color="#00d4b4"),
         })
     rows = sel.selection.rows if sel else []
-    st.caption("Click a row to see that player's full profile.")
+    st.caption("Tap a row to see that player's full profile.")
     if rows and b.iloc[rows[0]]["player_id"] in label_by_id:
         st.divider()
         render_profile(b.iloc[rows[0]]["player_id"], "bo_pf")
 
 with tab_trade:
     st.subheader("Trade analyzer")
-    st.write("Compares rest-of-season projected points, including each player's remaining schedule and bye week.")
+    st.markdown('<div class="sub">Values each player by rest-of-season points above a replacement-level starter, '
+                'so a 2-for-1 doesn\'t win just by adding bodies. Players you could replace off waivers are worth 0.</div>',
+                unsafe_allow_html=True)
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
-    w0, w1 = st.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default))
+    c0, c00 = st.columns([3, 1])
+    w0, w1 = c0.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default))
+    sizes = [8, 10, 12, 14]
+    default_n = league()["teams"] if league() and league()["teams"] in sizes else 12
+    teams_n = c00.selectbox("League size", sizes, index=sizes.index(default_n), key="league_size")
+    init_from_url("give", "give")
+    init_from_url("get", "get")
     c1, c2 = st.columns(2)
     give = c1.multiselect("You give", labels, key="give", placeholder="Players you're sending")
     get = c2.multiselect("You get", labels, key="get", placeholder="Players you're receiving")
+    sync_url("give", give)
+    sync_url("get", get)
+    vals = ros_values(w0, w1, teams_n).set_index("player_id")
 
-    def ros(labs):
-        out = []
+    def side(labs):
+        rows_ = []
         for lab in labs:
-            r = proj[(proj["player_id"] == id_by_label[lab]) & proj["week"].between(w0, w1)]
-            out.append({"Player": lab, "Games": len(r), "Pts per game": r["proj"].mean() if len(r) else 0,
-                        "ROS points": r["proj"].sum()})
-        return pd.DataFrame(out)
+            v = vals.loc[id_by_label[lab]]
+            rows_.append({"Player": lab, "Games": int(v["games"]), "ROS points": v["ros"],
+                          "Replacement": v["repl"], "Value": v["value"]})
+        return pd.DataFrame(rows_)
 
     if give and get:
-        g, r = ros(give), ros(get)
-        gt, rt = g["ROS points"].sum(), r["ROS points"].sum()
-        diff = rt - gt
-        pct = diff / gt * 100 if gt else 0
-        verdict, fn = (("Fair trade", st.info) if abs(pct) < 5 else
-                       ("You win this trade", st.success) if pct > 0 else ("You lose this trade", st.error))
-        fn(f"**{verdict}** · you {'gain' if diff >= 0 else 'lose'} {abs(diff):.1f} projected points "
-           f"({pct:+.0f}%) from Week {w0} to {w1}")
-        cfg = {"Pts per game": st.column_config.NumberColumn(format="%.1f"),
-               "ROS points": st.column_config.NumberColumn(format="%.1f")}
+        g, r = side(give), side(get)
+        gv, rv = g["Value"].sum(), r["Value"].sum()
+        diff = rv - gv
+        if abs(diff) < max(5, 0.08 * max(gv, rv, 1)):
+            verdict, fn = "Fair trade", st.info
+        elif diff > 0:
+            verdict, fn = "You win this trade", st.success
+        else:
+            verdict, fn = "You lose this trade", st.error
+        fn(f"**{verdict}** · you {'gain' if diff >= 0 else 'give up'} {abs(diff):.1f} points of value above "
+           f"replacement (Weeks {w0}-{w1}, {teams_n}-team league)")
+        cfg = {c: st.column_config.NumberColumn(format="%.1f") for c in ["ROS points", "Value"]}
+        cfg["Replacement"] = st.column_config.NumberColumn(
+            "Replacement level", format="%.1f", help="Rest-of-season points of the last startable player at that position")
         a, bcol = st.columns(2)
-        a.metric("You give", f"{gt:.1f} pts")
+        a.metric("You give", f"{gv:.1f} value")
+        a.caption(f"{g['ROS points'].sum():.0f} raw projected points")
         a.dataframe(g, hide_index=True, width="stretch", column_config=cfg)
-        bcol.metric("You get", f"{rt:.1f} pts", f"{diff:+.1f}")
+        bcol.metric("You get", f"{rv:.1f} value")
+        bcol.caption(f"{r['ROS points'].sum():.0f} raw projected points")
         bcol.dataframe(r, hide_index=True, width="stretch", column_config=cfg)
-
-        def weekly(labs):
-            ids = [id_by_label[l] for l in labs]
-            w = proj[proj["player_id"].isin(ids) & proj["week"].between(w0, w1)]
-            return w.groupby("week")["proj"].sum().reindex(range(w0, w1 + 1), fill_value=0)
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=list(range(w0, w1 + 1)), y=weekly(give), name="You give", marker_color="#e15759"))
-        fig.add_trace(go.Bar(x=list(range(w0, w1 + 1)), y=weekly(get), name="You get", marker_color="#59a14f"))
-        fig.update_layout(barmode="group", height=320, margin=dict(l=10, r=10, t=30, b=30), xaxis_title="Week",
-                          yaxis_title="Projected points", xaxis=dict(dtick=1), legend=dict(orientation="h", y=1.12))
-        st.plotly_chart(fig, width="stretch")
-        st.caption("Points aren't everything: getting 2 players for 1 only helps if they'd crack your starting lineup.")
+        st.caption("Copy this page's link to share this exact trade with your league.")
     else:
         st.info("Add at least one player to each side.")
+
+with tab_acc:
+    st.subheader("How accurate are the projections?")
+    if acc.empty:
+        st.info("No scored weeks yet. Accuracy appears here once games are played.")
+    else:
+        rel = acc[acc["proj"] >= 8].copy()
+        rel["err"] = (rel["proj"] - rel["ppr"]).abs()
+        rel["base_err"] = (rel["ewm_ppr"] - rel["ppr"]).abs()
+        rel["in_range"] = rel["ppr"].between(rel["floor"], rel["ceiling"])
+        wk_stats = rel.groupby("week").agg(model=("err", "mean"), baseline=("base_err", "mean")).reset_index()
+        src = acc.groupby("week")["source"].first()
+        a, b, c, d = st.columns(4)
+        a.metric("Weeks scored", len(wk_stats))
+        b.metric("Average miss", f"{rel['err'].mean():.2f} pts",
+                 f"{rel['err'].mean() - rel['base_err'].mean():+.2f} vs baseline", delta_color="inverse")
+        c.metric("In floor-ceiling range", f"{rel['in_range'].mean() * 100:.0f}%")
+        d.metric("Player-games scored", f"{len(rel):,}")
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=wk_stats["week"], y=wk_stats["model"], name="Model avg miss", marker_color=ACCENT,
+                             text=wk_stats["model"].round(2), textposition="inside", insidetextanchor="start",
+                             textfont=dict(color="#0d1a18")))
+        fig.add_trace(go.Scatter(x=wk_stats["week"], y=wk_stats["baseline"], name="Baseline avg miss",
+                                 mode="lines+markers", line=dict(color=POS_COLORS["QB"], width=3)))
+        fig.update_layout(xaxis=dict(dtick=1, title="Week"), yaxis_title="Average miss (pts)")
+        st.plotly_chart(plot_style(fig), width="stretch", key="acc_chart")
+        bf = [int(w) for w, s_ in src.items() if s_ == "backfill"]
+        if bf:
+            st.caption(f"Weeks {bf[0]}-{bf[-1]} are walk-forward backfills: the model was retrained before each week "
+                       "using only earlier games. Later weeks use projections saved live before kickoff. "
+                       "Scored on players projected for 8+ points.")
+        aw = st.selectbox("Look at a week", sorted(rel["week"].unique(), reverse=True), key="acc_week")
+        w = rel[rel["week"] == aw].copy()
+        w["miss"] = w["ppr"] - w["proj"]
+        cols_ = {"name": "Player", "position": "Pos", "team": "Team", "proj": "Projected", "ppr": "Actual",
+                 "miss": "Difference"}
+        cfg = {k: st.column_config.NumberColumn(format="%.1f") for k in ["Projected", "Actual", "Difference"]}
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Best calls** (projected 12+, closest to actual)")
+            st.dataframe(w[w["proj"] >= 12].nsmallest(8, "err")[list(cols_)].rename(columns=cols_),
+                         hide_index=True, width="stretch", column_config=cfg)
+        with c2:
+            st.markdown("**Biggest misses**")
+            st.dataframe(w.nlargest(8, "err")[list(cols_)].rename(columns=cols_),
+                         hide_index=True, width="stretch", column_config=cfg)
+        fig = go.Figure()
+        for pos_, color in POS_COLORS.items():
+            s_ = w[w["position"] == pos_]
+            fig.add_trace(go.Scatter(x=s_["proj"], y=s_["ppr"], mode="markers", name=pos_,
+                                     marker=dict(color=color, size=8, opacity=.8), text=s_["name"],
+                                     hovertemplate="%{text}: proj %{x:.1f}, actual %{y:.1f}<extra></extra>"))
+        mx = max(w["proj"].max(), w["ppr"].max()) + 2
+        fig.add_trace(go.Scatter(x=[0, mx], y=[0, mx], mode="lines", name="Perfect projection",
+                                 line=dict(color="rgba(207,213,227,.45)", dash="dash")))
+        fig.update_layout(title=f"Week {aw}: projected vs actual", xaxis_title="Projected PPR", yaxis_title="Actual PPR")
+        st.plotly_chart(plot_style(fig, 420), width="stretch", key="acc_scatter")
 
 with tab_model:
     st.subheader("How the projections work")
     st.markdown(
         "- **Data:** weekly stats for every QB, RB, WR, and TE since 2021 from "
-        "[nflverse](https://github.com/nflverse), stored in a SQLite database, plus weekly injury reports.\n"
+        "[nflverse](https://github.com/nflverse), stored in a SQLite database, plus injury reports, snap counts, "
+        "play-by-play, and game-day weather forecasts.\n"
         "- **Features (all known before kickoff):** recent form weighted toward the latest games "
         "(points, targets, carries, target share, air yards), the opponent's points allowed to that "
         "position, and the Vegas implied team total.\n"
-        "- **Model:** gradient-boosted trees (scikit-learn). Floor and ceiling come from how actual "
-        "scores spread around projections in a held-out season. Players ruled Out are set to 0.\n"
+        "- **Model:** one gradient-boosted tree model (scikit-learn) with position as a feature. Floor and ceiling "
+        "come from how actual scores spread around projections in a held-out season. Players ruled Out are set to 0.\n"
         "- **Baseline:** each player's recent weighted average. A useful model has to beat it.")
     st.markdown("#### Backtest: predicting games the model never saw")
     for label, rows_ in metrics["backtest"].items():
@@ -482,10 +943,18 @@ with tab_model:
                      hide_index=True, width="stretch")
     st.markdown("#### What drives the projections")
     imp = pd.DataFrame(metrics["importance"]).head(10)
-    imp["feature"] = imp["feature"].map(
-        lambda f: FEATURE_LABELS.get(f, f.replace("ewm_", "Recent ").replace("_", " ")))
-    fig = go.Figure(go.Bar(x=imp["importance"][::-1], y=imp["feature"][::-1], orientation="h", marker_color="#4e79a7"))
-    fig.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=30),
-                      xaxis_title="Increase in average miss when the feature is scrambled (pts)")
-    st.plotly_chart(fig, width="stretch")
+    imp["feature"] = imp["feature"].map(lambda f: FEATURE_LABELS.get(f, f.replace("ewm_", "Recent ").replace("_", " ")))
+    fig = go.Figure(go.Bar(x=imp["importance"][::-1], y=imp["feature"][::-1], orientation="h", marker_color=ACCENT))
+    fig.update_layout(xaxis_title="Increase in average miss when the feature is scrambled (pts)")
+    st.plotly_chart(plot_style(fig, 360, legend_below=False), width="stretch")
     st.caption("Evaluated on fantasy-relevant players (recent form of 6+ PPR points per game).")
+    st.markdown("#### Experiments")
+    st.write("Ideas I tested that didn't make the cut. A change was kept only if it lowered the average miss in both "
+             "backtests. Splitting into one model per position left each model with too little data. Weather didn't "
+             "move the overall average because strong wind is rare, but QBs in 15+ mph wind did score about 3 points "
+             "below projection, so the app flags windy games instead.")
+    ex = pd.DataFrame(experiments).rename(columns={"change": "Change", "mae_2025": "2025 avg miss",
+                                                   "mae_2026": "2026 avg miss", "kept": "Kept"})
+    st.dataframe(ex, hide_index=True, width="stretch",
+                 column_config={"2025 avg miss": st.column_config.NumberColumn(format="%.2f"),
+                                "2026 avg miss": st.column_config.NumberColumn(format="%.2f")})

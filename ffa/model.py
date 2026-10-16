@@ -105,3 +105,19 @@ def feature_importance(model, df, n=4000):
 
 def load_models():
     return joblib.load(MODEL_DIR / "models.joblib")
+
+
+def walk_forward(df, season, weeks):
+    """Re-create the projections we *would* have made before each week, using only earlier data.
+
+    Used to backfill the accuracy tracker for weeks before live tracking began.
+    """
+    out = []
+    for w in weeks:
+        before = (df["season"] < season) | ((df["season"] == season) & (df["week"] < w))
+        target = df[(df["season"] == season) & (df["week"] == w)]
+        if len(target) == 0:
+            continue
+        preds = predict(fit(df[before]), target)
+        out.append(target[["player_id", "name", "position", "team", "season", "week", "ewm_ppr"]].join(preds))
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame()

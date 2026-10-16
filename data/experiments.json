@@ -1,0 +1,50 @@
+[
+  {
+    "change": "Current model (recent form, opponent defense, Vegas lines)",
+    "mae_2025": 5.78,
+    "mae_2026": 5.9,
+    "kept": true
+  },
+  {
+    "change": "+ snap share",
+    "mae_2025": 5.76,
+    "mae_2026": 5.96,
+    "kept": false
+  },
+  {
+    "change": "+ snap share + red zone usage",
+    "mae_2025": 5.78,
+    "mae_2026": 5.96,
+    "kept": false
+  },
+  {
+    "change": "+ usage trend features (snap, red zone, opportunities)",
+    "mae_2025": 5.75,
+    "mae_2026": 5.95,
+    "kept": false
+  },
+  {
+    "change": "Train only on fantasy-relevant players",
+    "mae_2025": 5.76,
+    "mae_2026": 5.94,
+    "kept": false
+  },
+  {
+    "change": "One model per position (tuned)",
+    "mae_2025": 5.95,
+    "mae_2026": 5.92,
+    "kept": false
+  },
+  {
+    "change": "+ weather (dome, temperature, wind)",
+    "mae_2025": 5.77,
+    "mae_2026": 5.92,
+    "kept": false
+  },
+  {
+    "change": "+ weather + stadium (turf, rest days, division game)",
+    "mae_2025": 5.77,
+    "mae_2026": 5.93,
+    "kept": false
+  }
+]
