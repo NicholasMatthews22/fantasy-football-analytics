@@ -21,7 +21,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap');
 :root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #00d4b4;
   --qb: #ff4f81; --rb: #22d3b6; --wr: #58b6ff; --te: #ffb35c; }
-.block-container { padding-top: 1.6rem !important; max-width: 1280px; }
+.block-container { padding-top: 2rem !important; max-width: 1280px; }
 h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"], .num {
   font-family: 'Poppins', 'Segoe UI', sans-serif !important; }
 h1 { font-weight: 800 !important; letter-spacing: -.5px; font-size: 2.1rem !important; }
@@ -36,8 +36,18 @@ h3 { font-weight: 700 !important; }
 [data-testid="stMetric"] { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
 [data-testid="stMetricValue"] { font-weight: 700; }
 .sub { color: var(--muted); font-size: .9rem; margin-top: -6px; }
-[data-baseweb="tag"], [data-baseweb="tag"] span { color: #0d1a18 !important; font-weight: 600; }
-[data-baseweb="tag"] span[role="presentation"], [data-baseweb="tag"] svg { color: #0d1a18 !important; }
+/* hide Streamlit's own header buttons and badges */
+header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
+[data-testid="stStatusWidget"], .stAppDeployButton, [class*="viewerBadge"], [data-testid="manage-app-button"] {
+  display: none !important; }
+span[data-baseweb="tag"] { background: #232a3a !important; border: 1px solid var(--accent) !important; }
+span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !important; }
+.flabel { font-size: .875rem; margin-bottom: .25rem; min-height: 1.4rem; display: flex; align-items: flex-end; }
+.intro { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px;
+  margin: 4px 0 14px; }
+.intro-t { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.25rem; }
+.intro-w { color: #cfd5e3; margin-top: 2px; }
+.intro-h { color: var(--muted); font-size: .82rem; margin-top: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line);
   border-radius: 999px; padding: 3px 10px; font-size: .8rem; color: #cfd5e3; margin: 2px 6px 2px 0; }
 .chip b { color: var(--accent); }
@@ -124,7 +134,7 @@ h3 { font-weight: 700 !important; }
   .ss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .block-container { padding-left: 12px !important; padding-right: 12px !important; padding-top: 3.2rem !important; }
+  .block-container { padding-left: 12px !important; padding-right: 12px !important; padding-top: 1.2rem !important; }
   h1 { font-size: 1.5rem !important; }
   .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .gl-grid.three { grid-template-columns: 1fr; }
@@ -238,6 +248,35 @@ def wind_badge(r):
 
 def pill(pos_):
     return f'<span class="pos pos-{pos_}">{pos_}</span>'
+
+
+def intro(title, what, how):
+    """Consistent section header: what the section is for and how to use it."""
+    html(f'<div class="intro"><div class="intro-t">{title}</div><div class="intro-w">{what}</div>'
+         f'<div class="intro-h">How to use it: {how}</div></div>')
+
+
+def position_filter(key):
+    """Dropdown with checkboxes: pick one position, several, or all."""
+    opts = ["QB", "RB", "WR", "TE"]
+    ss = st.session_state
+    for p_ in opts:
+        ss.setdefault(f"{key}_{p_}", True)
+    chosen = [p_ for p_ in opts if ss[f"{key}_{p_}"]]
+    ss[f"{key}_all"] = len(chosen) == len(opts)
+    summary = "All positions" if len(chosen) == len(opts) else (", ".join(chosen) if chosen else "None selected")
+
+    def toggle_all():
+        for p_ in opts:
+            ss[f"{key}_{p_}"] = ss[f"{key}_all"]
+
+    st.markdown('<div class="flabel">Position</div>', unsafe_allow_html=True)
+    with st.popover(summary, width="stretch"):
+        st.checkbox("All positions", key=f"{key}_all", on_change=toggle_all)
+        st.markdown('<hr style="margin:2px 0 6px;border-color:#2b3244">', unsafe_allow_html=True)
+        for p_ in opts:
+            st.checkbox(p_, key=f"{key}_{p_}")
+    return chosen
 
 
 def week_row(pid, week):
@@ -467,13 +506,13 @@ def render_profile(pid, key):
 
 
 # ---------- tabs ----------
-(tab_proj, tab_rank, tab_team, tab_player, tab_ss, tab_bo, tab_trade, tab_acc, tab_model) = st.tabs(
-    ["Projections", "Rankings", "My Team", "Players", "Start / Sit", "Breakouts", "Trades", "Accuracy", "Model"])
 
-with tab_proj:
+def view_projections():
+    intro("Weekly projections", "Every player's projected points for the week, with a floor (a bad day) and a ceiling (a great day).", "Pick a week and positions, or search a name. Tap any row to open that player's profile.")
     c1, c2, c3 = st.columns([1, 2, 2])
     week = c1.selectbox("Week", sorted(proj["week"].unique()), key="pw")
-    pos_sel = c2.multiselect("Position", ["QB", "RB", "WR", "TE"], default=["QB", "RB", "WR", "TE"])
+    with c2:
+        pos_sel = position_filter("pf_pos")
     search = c3.text_input("Search player", "", placeholder="Name")
     t = proj[(proj["week"] == week) & proj["position"].isin(pos_sel)]
     if search:
@@ -508,10 +547,8 @@ with tab_proj:
         st.divider()
         render_profile(t.iloc[rows[0]]["player_id"], "proj_pf")
 
-with tab_rank:
-    st.subheader("Rest-of-season rankings")
-    st.markdown('<div class="sub">Ranked by value: projected points above a replacement-level starter at each '
-                'position. Use it for trades and waiver decisions.</div>', unsafe_allow_html=True)
+def view_rankings():
+    intro("Rest-of-season rankings", "Every player ranked by value: projected points above a replacement-level starter at his position.", "Set your league size and the weeks you care about. Connect Sleeper in My Team to see who is available.")
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
     c1, c2, c3 = st.columns([3, 1, 2])
@@ -519,7 +556,8 @@ with tab_rank:
     sizes = [8, 10, 12, 14]
     default_n = league()["teams"] if league() and league()["teams"] in sizes else 12
     rk_n = c2.selectbox("League size", sizes, index=sizes.index(default_n), key="rk_n")
-    rk_pos = c3.multiselect("Position", ["QB", "RB", "WR", "TE"], default=["QB", "RB", "WR", "TE"], key="rk_pos")
+    with c3:
+        rk_pos = position_filter("rk_pos")
     rk = ros_values(rw0, rw1, rk_n)
     rk = rk[rk["position"].isin(rk_pos)].copy()
     if league():
@@ -548,8 +586,8 @@ with tab_rank:
     if not league():
         st.caption("Connect your Sleeper league in the My Team tab to see who's available.")
 
-with tab_team:
-    st.subheader("My Team")
+def view_team():
+    intro("My Team", "Your best lineup for the week, close calls, alerts, and the best pickups on your waiver wire.", "Import your roster from Sleeper or add players by hand. Bookmark the page and your team is saved.")
     with st.container(border=True):
         st.markdown("**Import from Sleeper** · pulls your roster and your league's waiver wire")
         c1, c2 = st.columns([2, 3])
@@ -710,12 +748,13 @@ with tab_team:
         else:
             st.caption("Nobody available projects higher than your current starters this week.")
 
-with tab_player:
+def view_players():
+    intro("Player profiles", "Season stats, game log, usage trends, and projections for every remaining week.", "Search for any player.")
     pick = st.selectbox("Find a player", labels, index=0, key="pf_pick")
     render_profile(id_by_label[pick], "tab_pf")
 
-with tab_ss:
-    st.subheader("Who should I start?")
+def view_startsit():
+    intro("Start / Sit", "Compare 2 to 4 players for a lineup decision.", "Pick the week and players. The highlighted card is the start. Close calls get a tiebreaker tip.")
     c1, c2 = st.columns([1, 3])
     ss_week = c1.selectbox("Week", sorted(proj["week"].unique()), key="ssw")
     init_from_url("ss_picks", "ss")
@@ -768,15 +807,12 @@ with tab_ss:
                 st.caption("Questionable players usually play, but check news before kickoff.")
             st.caption("Copy this page's link to share this comparison.")
 
-with tab_bo:
-    st.subheader("Breakout detector")
-    st.markdown('<div class="sub">Fantasy points bounce around week to week, but targets and carries are sticky. '
-                'This ranks players whose usage jumped over their last 3 games, plus players whose points haven\'t '
-                'caught up to their usage yet. xFP = expected fantasy points from opportunities alone.</div>',
-                unsafe_allow_html=True)
+def view_breakouts():
+    intro("Breakouts", "Players whose usage is climbing before their points catch up. Targets and carries predict future points better than last week's score.", "Look for the Usage spike and Due for points tags. Tap a row for the full profile.")
     c1, c2 = st.columns([3, 2])
-    bpos = c1.radio("Position", ["All", "QB", "RB", "WR", "TE"], horizontal=True, key="bpos")
-    b = breakouts if bpos == "All" else breakouts[breakouts["position"] == bpos]
+    with c1:
+        bpos = position_filter("bo_pos")
+    b = breakouts[breakouts["position"].isin(bpos)]
     if league() and c2.toggle(f"Only available in {league()['name']}", key="bo_avail"):
         b = b[~b["player_id"].isin(league()["rostered"])]
     b = b.head(25).copy()
@@ -805,11 +841,8 @@ with tab_bo:
         st.divider()
         render_profile(b.iloc[rows[0]]["player_id"], "bo_pf")
 
-with tab_trade:
-    st.subheader("Trade analyzer")
-    st.markdown('<div class="sub">Values each player by rest-of-season points above a replacement-level starter, '
-                'so a 2-for-1 doesn\'t win just by adding bodies. Players you could replace off waivers are worth 0.</div>',
-                unsafe_allow_html=True)
+def view_trades():
+    intro("Trade analyzer", "Judges a trade by value above replacement, so a 2-for-1 doesn't win just by adding bodies.", "Add players to each side. Copy the page link to share the exact trade.")
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
     c0, c00 = st.columns([3, 1])
@@ -860,8 +893,8 @@ with tab_trade:
     else:
         st.info("Add at least one player to each side.")
 
-with tab_acc:
-    st.subheader("How accurate are the projections?")
+def view_accuracy():
+    intro("Accuracy", "How the projections have actually performed, scored against real results every week.", "Pick a week to see the best calls and the biggest misses.")
     if acc.empty:
         st.info("No scored weeks yet. Accuracy appears here once games are played.")
     else:
@@ -917,8 +950,8 @@ with tab_acc:
         fig.update_layout(title=f"Week {aw}: projected vs actual", xaxis_title="Projected PPR", yaxis_title="Actual PPR")
         st.plotly_chart(plot_style(fig, 420), width="stretch", key="acc_scatter")
 
-with tab_model:
-    st.subheader("How the projections work")
+def view_model():
+    intro("How the model works", "The data, model, backtest results, and experiments behind every number in the app.", "Read top to bottom.")
     st.markdown(
         "- **Data:** weekly stats for every QB, RB, WR, and TE since 2021 from "
         "[nflverse](https://github.com/nflverse), stored in a SQLite database, plus injury reports, snap counts, "
@@ -958,3 +991,34 @@ with tab_model:
     st.dataframe(ex, hide_index=True, width="stretch",
                  column_config={"2025 avg miss": st.column_config.NumberColumn(format="%.2f"),
                                 "2026 avg miss": st.column_config.NumberColumn(format="%.2f")})
+
+
+# ---------- layout: six tabs, each with one clear job ----------
+qp = st.query_params
+if "give" in qp or "get" in qp:
+    default_tab = "Trades"
+elif league():
+    default_tab = "My Team"
+else:
+    default_tab = "This Week"
+names = ["This Week", "My Team", "Rankings", "Players", "Trades", "How It Works"]
+tabs = dict(zip(names, st.tabs(names, default=default_tab)))
+
+with tabs["This Week"]:
+    view = st.segmented_control("View", ["Projections", "Start / Sit"], required=True, key="tw_view",
+                                default="Start / Sit" if "ss" in qp else "Projections", label_visibility="collapsed")
+    view_projections() if view == "Projections" else view_startsit()
+with tabs["My Team"]:
+    view_team()
+with tabs["Rankings"]:
+    view = st.segmented_control("View", ["Rest of season", "Breakouts"], required=True, key="rk_view",
+                                default="Rest of season", label_visibility="collapsed")
+    view_rankings() if view == "Rest of season" else view_breakouts()
+with tabs["Players"]:
+    view_players()
+with tabs["Trades"]:
+    view_trades()
+with tabs["How It Works"]:
+    view = st.segmented_control("View", ["Accuracy", "The model"], required=True, key="hw_view",
+                                default="Accuracy", label_visibility="collapsed")
+    view_accuracy() if view == "Accuracy" else view_model()
