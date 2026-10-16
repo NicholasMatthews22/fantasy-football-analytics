@@ -75,6 +75,9 @@ def main(offline=False):
     data.write_table(kd_hist, "kdst_history")
     m = json.loads(METRICS_PATH.read_text())
     m["kdst"] = kd_metrics
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    m["updated_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%b %-d, %-I:%M %p ET")
     METRICS_PATH.write_text(json.dumps(m, indent=2))
     for pos_, r in kd_metrics.items():
         print(f"  {pos_} backtest: model MAE {r['model_mae']} vs baseline {r['baseline_mae']} ({r['games']} games)")

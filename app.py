@@ -13,7 +13,11 @@ from ffa import sleeper
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
-st.set_page_config(page_title="Fantasy Football Analytics", page_icon="🏈", layout="wide")
+st.set_page_config(page_title="Red Zone Lab · Fantasy Football Analytics", page_icon="assets/favicon.png",
+                   layout="wide")
+LOGO = ('<svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#7c5cff"/>'
+        '<path d="M16 26.5V17M9 17h14M9 17V6.5M23 17V6.5" stroke="#fff" stroke-width="2.8" stroke-linecap="round" '
+        'stroke-linejoin="round" fill="none"/></svg>')
 
 # ---------- look: dark, Sleeper-style ----------
 POS_COLORS = {"QB": "#ff4f81", "RB": "#22d3b6", "WR": "#58b6ff", "TE": "#ffb35c", "K": "#b794ff", "DST": "#9aa3b8"}
@@ -31,13 +35,33 @@ ACCENT, MUTED = "#9b6bff", "#8b93a7"
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 :root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #9b6bff;
   --qb: #ff4f81; --rb: #22d3b6; --wr: #58b6ff; --te: #ffb35c; }
 .block-container { padding-top: 2rem !important; max-width: 1280px; }
 h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"], .num {
-  font-family: 'Poppins', 'Segoe UI', sans-serif !important; }
+  font-family: 'Inter', 'Segoe UI', sans-serif !important; }
 h1 { font-weight: 800 !important; letter-spacing: -.5px; font-size: 2.1rem !important; }
+[data-testid="stMarkdownContainer"] p, [data-testid="stWidgetLabel"] p, .stApp input, .stApp button p,
+.gl-card, .lu-row, .pc-row, .ss-card, .note, .chip { font-family: 'Inter', 'Segoe UI', sans-serif; }
+.gl-pts, .lu-pts, .pc-pts, .ss-proj, .mu-pts, .mu-wp, .pf-stats div { font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
+
+/* page header */
+.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--line); padding-bottom: 12px; margin: 0 0 16px; }
+.ph h2 { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -.4px; margin: 0; padding: 0; }
+.ph .info { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 8px;
+  border-radius: 50%; border: 1px solid var(--muted); color: var(--muted); font-size: .7rem; font-weight: 700;
+  cursor: help; vertical-align: middle; position: relative; top: -3px; }
+.ph.sub { border: 0; padding: 0; margin: 4px 0 10px; }
+.ph.sub h3 { font-size: 1.15rem; font-weight: 700; margin: 0; padding: 0; color: #e8ebf2; }
+.ph .meta { color: var(--muted); font-size: .82rem; }
+.ph .meta b { color: #cfd5e3; font-weight: 600; }
+
+/* footer */
+.foot { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem;
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.foot a { color: #cfd5e3; text-decoration: none; } .foot a:hover { color: var(--accent); }
 h1 span.hl { color: var(--accent); }
 h3 { font-weight: 700 !important; }
 .stTabs [data-baseweb="tab-list"] { gap: 4px; overflow-x: auto; scrollbar-width: none; }
@@ -57,10 +81,11 @@ header[data-testid="stHeader"] { background: transparent !important; height: 2.6
 
 /* sidebar menu */
 section[data-testid="stSidebar"] { background: #141824 !important; border-right: 1px solid var(--line); }
-section[data-testid="stSidebar"] .brand { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.25rem;
-  line-height: 1.15; margin: 0 0 4px; }
+section[data-testid="stSidebar"] .brand-row { display: flex; align-items: center; gap: 10px; margin: -8px 0 18px; }
+section[data-testid="stSidebar"] .brand { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 1.1rem;
+  line-height: 1.1; letter-spacing: -.3px; }
 section[data-testid="stSidebar"] .brand span { color: var(--accent); }
-section[data-testid="stSidebar"] .side-sub { color: var(--muted); font-size: .78rem; margin-bottom: 14px; }
+section[data-testid="stSidebar"] .side-sub { color: var(--muted); font-size: .74rem; margin-top: 2px; }
 section[data-testid="stSidebar"] [data-testid="stRadio"], section[data-testid="stSidebar"] [data-testid="stRadio"] > div,
 section[data-testid="stSidebar"] [data-testid="stRadio"] label + div { width: 100% !important; }
 section[data-testid="stSidebar"] [role="radiogroup"] { display: flex !important; flex-direction: column; align-items: stretch !important; gap: 4px; width: 100% !important; }
@@ -83,9 +108,9 @@ span[data-baseweb="tag"], [data-testid="stMultiSelectTagsContainer"] > div {
 [data-testid="stMultiSelectTagsContainer"] > div, [data-testid="stMultiSelectTagsContainer"] > div * { color: #e8ebf2 !important; }
 span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !important; }
 .flabel { font-size: .875rem; margin-bottom: .25rem; min-height: 1.4rem; display: flex; align-items: flex-end; }
-.intro { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px;
+.intro { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px;
   margin: 4px 0 14px; }
-.intro-t { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.25rem; }
+.intro-t { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.25rem; }
 .intro-w { color: #cfd5e3; margin-top: 2px; }
 .intro-h { color: var(--muted); font-size: .82rem; margin-top: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line);
@@ -106,9 +131,9 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 /* cards */
 .gl-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
 .gl-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.gl-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; min-width: 0;
+.gl-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; min-width: 0;
   background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; }
-.gl-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--tc); }
+.gl-card::before { content: none; }
 .gl-card .hs, .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: top;
   background: var(--surface2); flex: none; }
 .gl-card .logo { width: 44px; height: 44px; flex: none; }
@@ -116,23 +141,23 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .gl-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); font-weight: 600; }
 .gl-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gl-meta { font-size: .8rem; color: var(--muted); }
-.gl-pts { margin-left: auto; font-family: 'Poppins', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
+.gl-pts { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .gl-pts small { display: block; font-size: .65rem; font-weight: 500; color: var(--muted); text-align: right; }
 .note { font-size: .85rem; color: #cfd5e3; margin: 0 0 8px; }
 
 /* start/sit */
 .ss-grid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; }
-.ss-card { border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
+.ss-card { border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
 .ss-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px rgba(155,107,255,.15); }
 .ss-band { background: var(--tc); color: #fff; display: flex; align-items: center; gap: 8px; padding: 7px 12px;
-  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
 .ss-band img { width: 24px; height: 24px; background: rgba(255,255,255,.92); border-radius: 50%; padding: 2px; }
 .ss-band .badge { margin-left: auto; }
 .ss-body { padding: 14px; text-align: center; }
 .ss-body .hs { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
 .ss-name { font-weight: 700; font-size: 1.05rem; margin-top: 6px; }
 .ss-meta { font-size: .8rem; color: var(--muted); }
-.ss-proj { font-family: 'Poppins', sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
+.ss-proj { font-family: 'Inter', sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
 .ss-proj span { font-size: .75rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
 .range { position: relative; height: 8px; border-radius: 4px; background: var(--surface2); margin: 12px 4px 4px; }
 .range-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); opacity: .45; }
@@ -143,15 +168,15 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   font-size: .7rem; padding: 2px 8px; border-radius: 6px; letter-spacing: .5px; }
 
 /* profile */
-.pf { display: flex; gap: 18px; align-items: center; border-radius: 18px; padding: 18px 22px; color: #fff; flex-wrap: wrap;
+.pf { display: flex; gap: 18px; align-items: center; border-radius: 14px; padding: 18px 22px; color: #fff; flex-wrap: wrap;
   background: linear-gradient(110deg, var(--tc) 0%, color-mix(in srgb, var(--tc) 55%, #10131c) 70%, #10131c 100%); }
 .pf .hs { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; object-position: top;
   background: rgba(255,255,255,.15); border: 3px solid rgba(255,255,255,.85); }
-.pf-name { font-family: 'Poppins', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
+.pf-name { font-family: 'Inter', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
 .pf-sub { opacity: .9; margin-top: 4px; }
 .pf-logo { width: 76px; height: 76px; margin-left: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
 .pf-stats { display: flex; gap: 22px; margin-top: 10px; flex-wrap: wrap; }
-.pf-stats div { font-family: 'Poppins', sans-serif; font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.pf-stats div { font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; line-height: 1; }
 .pf-stats small { display: block; font-family: inherit; font-size: .64rem; font-weight: 500; opacity: .8;
   text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
 
@@ -165,14 +190,14 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .lu-row .logo { width: 22px; height: 22px; flex: none; }
 .lu-name { font-weight: 700; font-size: .92rem; min-width: 0; line-height: 1.2; }
 .lu-name small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
-.lu-pts { margin-left: auto; text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.lu-pts { margin-left: auto; text-align: right; font-family: 'Inter', sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1; }
 .lu-pts small { display: block; font-size: .62rem; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
 /* projection cards */
 .pc { display: grid; gap: 6px; }
 .pc-row { display: grid; grid-template-columns: 44px 46px minmax(0, 1fr) minmax(0, 150px) 86px; align-items: center;
   gap: 12px; padding: 8px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
-.pc-rank { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--muted); font-size: .85rem; }
+.pc-rank { font-family: 'Inter', sans-serif; font-weight: 700; color: var(--muted); font-size: .85rem; }
 .pc-row .hs { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
 .pc-main { min-width: 0; }
 .pc-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -180,17 +205,17 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .pc-meta .good { color: var(--rb); font-weight: 700; } .pc-meta .tough { color: var(--qb); font-weight: 700; }
 .pc-range .range { margin: 4px 0 3px; }
 .pc-range .range-lbl { font-size: .66rem; }
-.pc-pts { text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
+.pc-pts { text-align: right; font-family: 'Inter', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .pc-pts small { display: block; font-size: .62rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
 /* matchup */
 .mu { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; background: var(--surface);
-  border: 1px solid var(--line); border-radius: 18px; padding: 14px 18px; }
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
 .mu-side.right { text-align: right; }
 .mu-name { font-weight: 700; color: #cfd5e3; }
-.mu-pts { font-family: 'Poppins', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+.mu-pts { font-family: 'Inter', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
 .mu-mid { text-align: center; }
-.mu-wp { font-family: 'Poppins', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.mu-wp { font-family: 'Inter', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
 .mu-mid small { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
 .wp-bar { height: 8px; border-radius: 4px; background: var(--qb); margin: 10px 0 14px; overflow: hidden; }
 .wp-bar div { height: 100%; background: var(--accent); }
@@ -240,7 +265,7 @@ POS_STYLE = {p: f"color:{c};font-weight:800" for p, c in POS_COLORS.items()}
 def plot_style(fig, height=340, legend_below=True):
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=46, b=60 if legend_below else 30),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#cfd5e3"), title_font=dict(family="Poppins", size=15))
+                      font=dict(color="#cfd5e3"), title_font=dict(family="Inter", size=14))
     fig.update_xaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
     fig.update_yaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
     if legend_below:
@@ -326,9 +351,15 @@ def pill(pos_):
 
 
 def intro(title, what, how):
-    """Consistent section header: what the section is for and how to use it."""
-    html(f'<div class="intro"><div class="intro-t">{title}</div><div class="intro-w">{what}</div>'
-         f'<div class="intro-h">How to use it: {how}</div></div>')
+    """Page header: title, a tooltip with what the page does and how to use it, and current context."""
+    tip = f"{what} {how}".replace('"', "'")
+    if st.session_state.get("_nested"):
+        html(f'<div class="ph sub"><h3>{title}<span class="info" title="{tip}">i</span></h3></div>')
+        return
+    meta = f"Week <b>{next_week}</b> · <b>{st.session_state.get('score_label', 'Full PPR')}</b>"
+    if league():
+        meta += f" · <b>{league()['name']}</b>"
+    html(f'<div class="ph"><h2>{title}<span class="info" title="{tip}">i</span></h2><div class="meta">{meta}</div></div>')
 
 
 def position_filter(key):
@@ -503,13 +534,12 @@ def rescore(df, settings):
 
 # ---------- sidebar ----------
 with st.sidebar:
-    st.markdown('<div class="brand">Fantasy Football <span>Analytics</span></div>'
-                f'<div class="side-sub">Week {next_week} · stats through Week {last_week}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="brand-row">{LOGO}<div><div class="brand">Red Zone Lab</div>'
+                f'<div class="side-sub">Fantasy football analytics</div></div></div>', unsafe_allow_html=True)
     nav_box = st.container()
     st.divider()
 
-# ---------- header ----------
-st.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
+# ---------- scoring choice ----------
 score_opts = (["My league"] if league() else []) + list(SCORING_PRESETS)
 if st.session_state.get("scoring") not in score_opts:
     st.session_state["scoring"] = score_opts[0]
@@ -517,48 +547,55 @@ scoring_name = st.sidebar.selectbox("Scoring", score_opts, key="scoring",
                             help="Projections are converted to this scoring. 'My league' uses your Sleeper settings.")
 proj = rescore(proj, league()["scoring"] if scoring_name == "My league" else SCORING_PRESETS[scoring_name])
 score_label = f"{league()['name']} scoring" if scoring_name == "My league" else scoring_name
-chips = [f"Week <b>{next_week}</b> projections", score_label, f"Stats through Week {last_week}"]
-if league():
-    chips.append(f"Connected: <b>{league()['name']}</b>")
-html(f'<div>{"".join(f"<span class=chip>{c}</span>" for c in chips)}</div>')
+st.session_state["score_label"] = score_label
 
-wk = proj[(proj["week"] == next_week) & ~proj["status"].isin(["Out", "Final"])]
-cards = []
-for pos_ in ["QB", "RB", "WR", "TE"]:
-    r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
-    cards.append(f"""<div class="gl-card" style="--tc:{POS_COLORS[pos_]}">
-      <img class="hs" src="{r['headshot_url']}"><div class="gl-txt">
-      <div class="gl-lbl">{pill(pos_)} Top</div><div class="gl-name">{r['name']}</div>
-      <div class="gl-meta">{r['team']} {r['matchup']} {badge(r['status'])}</div></div>
-      <div class="gl-pts">{r['proj']:.1f}<small>proj</small></div></div>""")
-html(f'<div class="gl-grid">{"".join(cards)}</div>')
 
-smash = wk[wk["proj"] >= 12].nlargest(1, "def_factor").iloc[0]
-bo = breakouts.iloc[0]
-hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
-html(f"""<div class="gl-grid three">
-  <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{smash['headshot_url']}"><div class="gl-txt">
-    <div class="gl-lbl">Best matchup</div><div class="gl-name">{smash['name']}</div>
-    <div class="gl-meta">{smash['matchup']} allows {(smash['def_factor'] - 1) * 100:+.0f}% to {smash['position']}s</div></div></div>
-  <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{bo['headshot_url']}"><div class="gl-txt">
-    <div class="gl-lbl">Top breakout candidate</div><div class="gl-name">{bo['name']}</div>
-    <div class="gl-meta">Targets + carries {bo['opps_before']:.1f} → {bo['opps_last3']:.1f} per game</div></div></div>
-  <div class="gl-card" style="--tc:{ACCENT}"><img class="logo" src="{hi['logo']}"><div class="gl-txt">
-    <div class="gl-lbl">Highest-scoring offense</div><div class="gl-name">{team_attr(hi['team'], 'team_name', hi['team'])}</div>
-    <div class="gl-meta">Vegas expects {hi['implied_total']:.1f} pts {hi['matchup']}</div></div></div>
-</div>""")
+def section_header(title, sub=""):
+    meta = f"Week <b>{next_week}</b> · <b>{score_label}</b>" + (f" · <b>{league()['name']}</b>" if league() else "")
+    html(f'<div class="ph"><div><h2>{title}</h2>{f"<div class=meta>{sub}</div>" if sub else ""}</div>'
+         f'<div class="meta">{meta}</div></div>')
 
-notes = []
-if not injury_posted:
-    notes.append(f'<span class="badge b-Questionable">Injuries</span> The Week {next_week} injury report isn\'t final '
-                 "yet. Statuses update automatically Saturday and Sunday mornings.")
-windy = wk[wk["windy"]].drop_duplicates("game_id")
-if len(windy):
-    games_txt = ", ".join(f"{r['team']} {r['matchup']} ({r['wind']:.0f} mph)" for _, r in windy.iterrows())
-    notes.append(f'<span class="badge b-wind">Wind watch</span> {games_txt}. In backtests, QBs in 15+ mph wind '
-                 "scored about 3 points below projection.")
-for n in notes:
-    html(f'<div class="note">{n}</div>')
+
+def render_home_summary():
+
+    wk = proj[(proj["week"] == next_week) & ~proj["status"].isin(["Out", "Final"])]
+    cards = []
+    for pos_ in ["QB", "RB", "WR", "TE"]:
+        r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
+        cards.append(f"""<div class="gl-card" style="--tc:{POS_COLORS[pos_]}">
+          <img class="hs" src="{r['headshot_url']}"><div class="gl-txt">
+          <div class="gl-lbl">{pill(pos_)} Top</div><div class="gl-name">{r['name']}</div>
+          <div class="gl-meta">{r['team']} {r['matchup']} {badge(r['status'])}</div></div>
+          <div class="gl-pts">{r['proj']:.1f}<small>proj</small></div></div>""")
+    html(f'<div class="gl-grid">{"".join(cards)}</div>')
+
+    smash = wk[wk["proj"] >= 12].nlargest(1, "def_factor").iloc[0]
+    bo = breakouts.iloc[0]
+    hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
+    html(f"""<div class="gl-grid three">
+      <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{smash['headshot_url']}"><div class="gl-txt">
+        <div class="gl-lbl">Best matchup</div><div class="gl-name">{smash['name']}</div>
+        <div class="gl-meta">{smash['matchup']} allows {(smash['def_factor'] - 1) * 100:+.0f}% to {smash['position']}s</div></div></div>
+      <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{bo['headshot_url']}"><div class="gl-txt">
+        <div class="gl-lbl">Top breakout candidate</div><div class="gl-name">{bo['name']}</div>
+        <div class="gl-meta">Targets + carries {bo['opps_before']:.1f} → {bo['opps_last3']:.1f} per game</div></div></div>
+      <div class="gl-card" style="--tc:{ACCENT}"><img class="logo" src="{hi['logo']}"><div class="gl-txt">
+        <div class="gl-lbl">Highest-scoring offense</div><div class="gl-name">{team_attr(hi['team'], 'team_name', hi['team'])}</div>
+        <div class="gl-meta">Vegas expects {hi['implied_total']:.1f} pts {hi['matchup']}</div></div></div>
+    </div>""")
+
+    notes = []
+    if not injury_posted:
+        notes.append(f'<span class="badge b-Questionable">Injuries</span> The Week {next_week} injury report isn\'t final '
+                     "yet. Statuses update automatically Saturday and Sunday mornings.")
+    windy = wk[wk["windy"]].drop_duplicates("game_id")
+    if len(windy):
+        games_txt = ", ".join(f"{r['team']} {r['matchup']} ({r['wind']:.0f} mph)" for _, r in windy.iterrows())
+        notes.append(f'<span class="badge b-wind">Wind watch</span> {games_txt}. In backtests, QBs in 15+ mph wind '
+                     "scored about 3 points below projection.")
+    for n in notes:
+        html(f'<div class="note">{n}</div>')
+
 
 
 # ---------- player profile ----------
@@ -818,7 +855,7 @@ def view_matchup(week):
     with c2:
         st.markdown(f"**{op_name}**")
         html(op_html)
-    st.caption("Win probability treats each starter's floor-to-ceiling range as a bell curve and adds them up.")
+    st.caption("Win probability compares both lineups' projected ranges.")
 
 
 def use_trade(give_label, get_label):
@@ -971,7 +1008,7 @@ def view_rankings():
         "owner": "League status",
     })
     if not league():
-        st.caption("Connect your Sleeper league in the My Team tab to see who's available.")
+        st.caption("Connect Sleeper in My Team to see who's available.")
 
 def view_team():
     intro("My Team", "Your best lineup for the week, close calls, alerts, and the best pickups on your waiver wire.", "Import your roster from Sleeper or add players by hand. Bookmark the page and your team is saved.")
@@ -1007,7 +1044,7 @@ def view_team():
             extra = f" {lg['unmatched']} roster spots (IDP or brand-new players) aren't projected here." \
                 if lg["unmatched"] else ""
             st.success(f"Connected to **{lg['name']}** ({lg['teams']} teams).{extra}")
-            st.caption("Projections now use your league's scoring and lineup slots. Change it with the Scoring menu in the sidebar.")
+            st.caption("Using your league's scoring and lineup slots.")
 
     init_from_url("team", "team")
     c1, c2 = st.columns([4, 1])
@@ -1074,9 +1111,9 @@ def view_team():
             if calls:
                 for x in calls:
                     st.write(x)
-                st.caption("Compare them side by side in the Start / Sit tab.")
+                st.caption("Compare them in Start / Sit.")
             else:
-                st.caption("No close calls. Every starter is 1.5+ points ahead of your bench.")
+                st.caption("None this week.")
             if alerts:
                 st.markdown("**Alerts**")
                 for x in alerts:
@@ -1181,7 +1218,7 @@ def view_startsit():
                                f"Projected {gap:.1f} points ahead of the next option.")
             if (df["status"] == "Questionable").any():
                 st.caption("Questionable players usually play, but check news before kickoff.")
-            st.caption("Copy this page's link to share this comparison.")
+            st.caption("Share it by copying the page link.")
 
 def view_breakouts():
     intro("Breakouts", "Players whose usage is climbing before their points catch up. Targets and carries predict future points better than last week's score.", "Look for the Usage spike and Due for points tags. Tap a row for the full profile.")
@@ -1212,7 +1249,7 @@ def view_breakouts():
                                                               color="#9b6bff"),
         })
     rows = sel.selection.rows if sel else []
-    st.caption("Tap a row to see that player's full profile.")
+    st.caption("Select a row for the full profile.")
     if rows and b.iloc[rows[0]]["player_id"] in label_by_id:
         st.divider()
         render_profile(b.iloc[rows[0]]["player_id"], "bo_pf")
@@ -1265,7 +1302,7 @@ def view_trades():
         bcol.metric("You get", f"{rv:.1f} value")
         bcol.caption(f"{r['ROS points'].sum():.0f} raw projected points")
         bcol.dataframe(r, hide_index=True, width="stretch", column_config=cfg)
-        st.caption("Copy this page's link to share this exact trade with your league.")
+        st.caption("Share it by copying the page link.")
     else:
         st.info("Add at least one player to each side.")
 
@@ -1379,11 +1416,18 @@ else:
     default_tab = "This Week"
 names = ["This Week", "My Team", "Rankings", "Players", "Trades", "How It Works"]
 st.session_state.setdefault("nav", default_tab)
+st.session_state["_nested"] = False
 with nav_box:
-    section = st.radio("Menu", names, key="nav", label_visibility="collapsed")
+    icons = {"This Week": ":material/today:", "My Team": ":material/groups:", "Rankings": ":material/leaderboard:",
+             "Players": ":material/person_search:", "Trades": ":material/swap_horiz:", "How It Works": ":material/insights:"}
+    section = st.radio("Menu", names, key="nav", label_visibility="collapsed", format_func=lambda n: f"{icons[n]} {n}")
 tabs = {n: st.container() if n == section else None for n in names}
 
 if section == "This Week":
+    section_header("This week", f"Stats through Week {last_week}")
+    render_home_summary()
+    st.write("")
+    st.session_state["_nested"] = True
     st.session_state.setdefault("tw_view", "Start / Sit" if "ss" in qp else "Projections")
     view = st.segmented_control("View", ["Projections", "Start / Sit"], required=True, key="tw_view",
                                 label_visibility="collapsed")
@@ -1391,6 +1435,8 @@ if section == "This Week":
 if section == "My Team":
     view_team()
 if section == "Rankings":
+    section_header("Rankings")
+    st.session_state["_nested"] = True
     st.session_state.setdefault("rk_view", "Rest of season")
     view = st.segmented_control("View", ["Rest of season", "Breakouts"], required=True, key="rk_view",
                                 label_visibility="collapsed")
@@ -1398,12 +1444,21 @@ if section == "Rankings":
 if section == "Players":
     view_players()
 if section == "Trades":
+    section_header("Trades")
+    st.session_state["_nested"] = True
     st.session_state.setdefault("tr_view", "Trade analyzer")
     view = st.segmented_control("View", ["Trade analyzer", "Trade finder"], required=True, key="tr_view",
                                 label_visibility="collapsed")
     view_trades() if view == "Trade analyzer" else view_trade_finder()
 if section == "How It Works":
+    section_header("How it works")
+    st.session_state["_nested"] = True
     st.session_state.setdefault("hw_view", "Accuracy")
     view = st.segmented_control("View", ["Accuracy", "The model"], required=True, key="hw_view",
                                 label_visibility="collapsed")
     view_accuracy() if view == "Accuracy" else view_model()
+
+updated = metrics.get("updated_at", "")
+html(f"""<div class="foot"><div>Red Zone Lab · projections update Tue, Sat and Sun mornings{' · last updated ' + updated if updated else ''}</div>
+<div>Data: <a href="https://github.com/nflverse" target="_blank">nflverse</a> · <a href="https://sleeper.com" target="_blank">Sleeper</a> ·
+<a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · <a href="https://github.com/NicholasMatthews22/fantasy-football-analytics" target="_blank">Source code</a></div></div>""")

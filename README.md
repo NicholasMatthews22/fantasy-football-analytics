@@ -1,4 +1,4 @@
-# Fantasy Football Analytics
+# Red Zone Lab: Fantasy Football Analytics
 
 A full-PPR fantasy football platform built on NFL play-by-play data: weekly projections with floor/ceiling ranges, a start/sit tool, a breakout detector for the waiver wire, and a rest-of-season trade analyzer. The data refreshes automatically every week.
 
