@@ -1011,7 +1011,7 @@ def view_team():
 
     init_from_url("team", "team")
     c1, c2 = st.columns([4, 1])
-    roster = c1.multiselect("Your roster", labels, key="team", max_selections=25, placeholder="Add your players...")
+    roster = c1.multiselect("Your roster", labels, key="team", placeholder="Add your players...")
     c2.button("Load example team", width="stretch", on_click=load_example_team)
     sync_url("team", roster)
     t_week = st.selectbox("Week", sorted(proj["week"].unique()), key="team_week")
