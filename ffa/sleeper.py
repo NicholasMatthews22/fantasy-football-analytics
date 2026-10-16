@@ -57,3 +57,17 @@ def rostered_ids(rosters):
 def ppr_value(league):
     """Points per reception in this league's scoring (1.0 = full PPR)."""
     return (league.get("scoring_settings") or {}).get("rec", 1.0)
+
+
+def league_users(league_id):
+    return _get(f"/league/{league_id}/users") or []
+
+
+def matchups(league_id, week):
+    return _get(f"/league/{league_id}/matchups/{week}") or []
+
+
+def team_name(user):
+    """A league member's team name, falling back to their display name."""
+    meta = user.get("metadata") or {}
+    return meta.get("team_name") or user.get("display_name") or "Team"

@@ -12,7 +12,10 @@ import sqlite3  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from ffa import data, features, model, breakouts  # noqa: E402
+import json  # noqa: E402
+
+from ffa import data, features, model, breakouts, kdst  # noqa: E402
+from ffa.config import METRICS_PATH  # noqa: E402
 from ffa.config import DB_PATH  # noqa: E402
 from ffa.config import CURRENT_SEASON  # noqa: E402
 
@@ -50,8 +53,28 @@ def main(offline=False):
         print(f"  Week {next_week} injury report applied: {int(out.sum())} players ruled out")
     else:
         print(f"  Week {next_week} injury report not out yet")
+
+    # kickers and defenses
+    kd, kd_metrics, kd_hist = kdst.build(games, features.team_games(games), last_week, inj)
+    kd = kd.assign(last_completed_week=last_week)
+    proj = pd.concat([proj, kd[[c for c in proj.columns if c in kd.columns]]], ignore_index=True)
+    data.write_table(kd_hist, "kdst_history")
+    m = json.loads(METRICS_PATH.read_text())
+    m["kdst"] = kd_metrics
+    METRICS_PATH.write_text(json.dumps(m, indent=2))
+    for pos_, r in kd_metrics.items():
+        print(f"  {pos_} backtest: model MAE {r['model_mae']} vs baseline {r['baseline_mae']} ({r['games']} games)")
+
     data.write_table(proj, "projections")
     print(f"  {proj['player_id'].nunique()} players, weeks {proj['week'].min()}-{proj['week'].max()}")
+
+    # per-player stat rates, so the app can re-score projections for any league's scoring
+    rates_cols = ["receptions", "receiving_yards", "receiving_tds", "rushing_yards", "rushing_tds",
+                  "passing_yards", "passing_tds", "passing_interceptions"]
+    srt = pw.sort_values(["player_id", "season", "week"])
+    rates = srt.groupby("player_id")[rates_cols].agg(
+        lambda s: s.ewm(halflife=features.PLAYER_HALFLIFE).mean().iloc[-1]).reset_index()
+    data.write_table(rates.round(3), "player_rates")
 
     print("   Game-day weather for upcoming outdoor games")
     from ffa.weather import game_weather

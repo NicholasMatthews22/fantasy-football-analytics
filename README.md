@@ -6,6 +6,9 @@ A full-PPR fantasy football platform built on NFL play-by-play data: weekly proj
 
 ## What it does
 
+Six tabs, each with one job: **This Week** (projections and start/sit), **My Team** (lineup and matchup), **Rankings** (rest of season and breakouts), **Players**, **Trades** (analyzer and finder), and **How It Works** (accuracy and the model). Covers QB, RB, WR, TE, K, and D/ST, in full PPR, half PPR, standard, or your Sleeper league's exact scoring.
+
+
 | Tab | What you get |
 |---|---|
 | **At a glance** | Top projected player at each position, the best matchup, the top breakout candidate, and the highest-scoring offense for the upcoming week |
@@ -15,6 +18,8 @@ A full-PPR fantasy football platform built on NFL play-by-play data: weekly proj
 | **My Team** | Import your roster from Sleeper (or add players by hand) and save it in the page link. Shows get your optimal lineup (QB, 2 RB, 2 WR, TE, FLEX), close calls, bye/injury/wind alerts, and the best players actually available on your league's waiver wire |
 | **Start / Sit** | Compare 2 to 4 players on side-by-side cards with team colors, matchup, injury status, and floor-to-ceiling range |
 | **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
+| **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
+| **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 trades that improve both teams' starting lineups |
 | **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
 | **Accuracy** | Projections are saved before kickoff every week and scored against real results: weekly average miss vs. baseline, best calls, biggest misses |
 | **Model** | Backtest results, what drives the projections, and feature experiments that didn't make the cut |
@@ -56,6 +61,12 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 **Trade analyzer.** Projects every remaining game using each player's current form against that week's opponent and betting line, then sums across the selected weeks.
 
 **Sleeper import.** Uses Sleeper's free public API (no login): username, then league, then roster. Sleeper player IDs are mapped to NFL IDs with the DynastyProcess ID database. Every rostered player in the league is marked taken, so waiver suggestions only show real free agents.
+
+**Kickers and defenses.** Scored with Sleeper defaults. A small regression on recent form plus Vegas context (team implied total for kickers, opponent implied total for defenses) beat the recent-average baseline in a 2025 backtest: kickers 3.84 vs 3.98 average miss, defenses 4.34 vs 4.61.
+
+**League scoring.** Projections are built in full PPR, then converted using each player's recent stat mix (receptions, yards, TDs, interceptions), so half PPR, TE premium, or 6-point passing TDs all re-rank players correctly.
+
+**Win probability.** Each starter's floor-to-ceiling range is treated as a bell curve; the lineup totals are compared to get the chance of outscoring the opponent.
 
 **Weather.** Forecasts for upcoming outdoor games come from Open-Meteo using each stadium's coordinates. Weather isn't a model feature (it didn't improve the backtest overall), but QBs in 15+ mph wind scored about 3 points below projection, so windy games get flagged.
 

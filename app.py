@@ -1,6 +1,9 @@
 """Fantasy Football Analytics: projections, rankings, my team, start/sit, breakouts, trades (full PPR)."""
 import json
+import math
 import sqlite3
+
+import numpy as np
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -13,7 +16,17 @@ from ffa.features import FEATURE_LABELS
 st.set_page_config(page_title="Fantasy Football Analytics", page_icon="🏈", layout="wide")
 
 # ---------- look: dark, Sleeper-style ----------
-POS_COLORS = {"QB": "#ff4f81", "RB": "#22d3b6", "WR": "#58b6ff", "TE": "#ffb35c"}
+POS_COLORS = {"QB": "#ff4f81", "RB": "#22d3b6", "WR": "#58b6ff", "TE": "#ffb35c", "K": "#b794ff", "DST": "#9aa3b8"}
+ALL_POS = ["QB", "RB", "WR", "TE", "K", "DST"]
+# Sleeper roster slots -> positions that can fill them
+SLOT_ELIG = {"QB": ["QB"], "RB": ["RB"], "WR": ["WR"], "TE": ["TE"], "K": ["K"], "DEF": ["DST"],
+             "FLEX": ["RB", "WR", "TE"], "WRRB_FLEX": ["RB", "WR"], "REC_FLEX": ["WR", "TE"],
+             "SUPER_FLEX": ["QB", "RB", "WR", "TE"]}
+SLOT_LABEL = {"DEF": "DST", "SUPER_FLEX": "SF", "WRRB_FLEX": "W/R", "REC_FLEX": "W/T"}
+DEFAULT_SLOTS = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"]
+STD_SCORING = {"rec": 1.0, "rec_yd": 0.1, "rec_td": 6, "rush_yd": 0.1, "rush_td": 6, "pass_yd": 0.04,
+               "pass_td": 4, "pass_int": -1, "bonus_rec_te": 0}
+SCORING_PRESETS = {"Full PPR": {}, "Half PPR": {"rec": 0.5}, "Standard (no PPR)": {"rec": 0.0}}
 ACCENT, MUTED = "#00d4b4", "#8b93a7"
 
 st.markdown("""
@@ -40,7 +53,9 @@ h3 { font-weight: 700 !important; }
 header[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"],
 [data-testid="stStatusWidget"], .stAppDeployButton, [class*="viewerBadge"], [data-testid="manage-app-button"] {
   display: none !important; }
-span[data-baseweb="tag"] { background: #232a3a !important; border: 1px solid var(--accent) !important; }
+span[data-baseweb="tag"], [data-testid="stMultiSelectTagsContainer"] > div {
+  background: #232a3a !important; border: 1px solid var(--accent) !important; }
+[data-testid="stMultiSelectTagsContainer"] > div, [data-testid="stMultiSelectTagsContainer"] > div * { color: #e8ebf2 !important; }
 span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !important; }
 .flabel { font-size: .875rem; margin-bottom: .25rem; min-height: 1.4rem; display: flex; align-items: flex-end; }
 .intro { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px;
@@ -56,7 +71,8 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .pos { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 6px;
   font-size: .7rem; font-weight: 800; letter-spacing: .3px; color: #10131c; vertical-align: middle; }
 .pos-QB { background: var(--qb); } .pos-RB { background: var(--rb); } .pos-WR { background: var(--wr); }
-.pos-TE { background: var(--te); } .pos-FLEX { background: linear-gradient(90deg, var(--rb), var(--wr), var(--te)); }
+.pos-TE { background: var(--te); } .pos-K { background: #b794ff; } .pos-DST { background: #9aa3b8; }
+.pos-FLEX { background: linear-gradient(90deg, var(--rb), var(--wr), var(--te)); }
 .badge { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: .68rem; font-weight: 800;
   text-transform: uppercase; letter-spacing: .4px; vertical-align: middle; }
 .b-Out { background: #ff4d4d; color: #fff; } .b-Doubtful { background: #ff8a3d; color: #fff; }
@@ -127,6 +143,18 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .lu-pts { margin-left: auto; text-align: right; font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 700; line-height: 1; }
 .lu-pts small { display: block; font-size: .66rem; font-weight: 500; color: var(--muted); }
 
+/* matchup */
+.mu { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 18px; padding: 14px 18px; }
+.mu-side.right { text-align: right; }
+.mu-name { font-weight: 700; color: #cfd5e3; }
+.mu-pts { font-family: 'Poppins', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+.mu-mid { text-align: center; }
+.mu-wp { font-family: 'Poppins', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.mu-mid small { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
+.wp-bar { height: 8px; border-radius: 4px; background: var(--qb); margin: 10px 0 14px; overflow: hidden; }
+.wp-bar div { height: 100%; background: var(--accent); }
+
 /* phones */
 @media (max-width: 900px) {
   .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -193,6 +221,7 @@ acc = query("SELECT * FROM accuracy")
 season = int(proj["gameday"].str[:4].min())
 games_cur = query(f"SELECT * FROM player_weeks WHERE season = {season}")
 metrics = json.loads(METRICS_PATH.read_text())
+kdst_hist = query("SELECT * FROM kdst_history")
 experiments = json.loads((METRICS_PATH.parent / "experiments.json").read_text())
 
 last_week = int(proj["last_completed_week"].iloc[0])
@@ -247,7 +276,9 @@ def wind_badge(r):
 
 
 def pill(pos_):
-    return f'<span class="pos pos-{pos_}">{pos_}</span>'
+    label = SLOT_LABEL.get(pos_, pos_)
+    cls = pos_ if pos_ in POS_COLORS else ("DST" if pos_ == "DEF" else "FLEX")
+    return f'<span class="pos pos-{cls}">{label}</span>'
 
 
 def intro(title, what, how):
@@ -258,7 +289,7 @@ def intro(title, what, how):
 
 def position_filter(key):
     """Dropdown with checkboxes: pick one position, several, or all."""
-    opts = ["QB", "RB", "WR", "TE"]
+    opts = ALL_POS
     ss = st.session_state
     for p_ in opts:
         ss.setdefault(f"{key}_{p_}", True)
@@ -310,13 +341,14 @@ def sync_url(param, chosen_labels):
 
 
 @st.cache_data
-def ros_values(w0, w1, teams_n):
+def ros_values(w0, w1, teams_n, scoring_key=""):
     """Rest-of-season points and value over a replacement-level starter for every active player."""
     r = (proj[proj["week"].between(w0, w1)].groupby("player_id")
          .agg(ros=("proj", "sum"), games=("proj", "size")).reset_index())
     r = players.merge(r, on="player_id", how="left").fillna({"ros": 0, "games": 0})
     r["ppg"] = r["ros"] / r["games"].where(r["games"] > 0)
-    repl_rank = {"QB": teams_n, "RB": int(teams_n * 2.5), "WR": int(teams_n * 2.5), "TE": teams_n}
+    repl_rank = {"QB": teams_n, "RB": int(teams_n * 2.5), "WR": int(teams_n * 2.5), "TE": teams_n,
+                 "K": teams_n, "DST": teams_n}
     r["repl"] = 0.0
     for pos_, n in repl_rank.items():
         vals = r.loc[r["position"] == pos_, "ros"].sort_values(ascending=False).reset_index(drop=True)
@@ -344,18 +376,47 @@ def sl_rosters(league_id):
     return sleeper.league_rosters(league_id)
 
 
+@st.cache_data(ttl=600, show_spinner=False)
+def sl_users(league_id):
+    return sleeper.league_users(league_id)
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def sl_matchups(league_id, week):
+    return sleeper.matchups(league_id, week)
+
+
+def to_gsis(sleeper_id):
+    """Sleeper player ID -> our player ID. Sleeper uses team abbreviations for defenses."""
+    sid = str(sleeper_id)
+    if sid.isalpha():
+        return "DST_" + {"LAR": "LA"}.get(sid, sid)
+    return gsis_by_sleeper.get(sid)
+
+
 def connect_league(league, user_id):
-    """Pull my roster and everyone's rostered players from a Sleeper league."""
+    """Pull every roster, team name, scoring setting, and lineup slot from a Sleeper league."""
     rosters = sl_rosters(league["league_id"])
+    try:
+        names = {u["user_id"]: sleeper.team_name(u) for u in sl_users(league["league_id"])}
+    except sleeper.SleeperError:
+        names = {}
     mine = sleeper.my_roster(rosters, user_id) or {}
-    my_ids = [gsis_by_sleeper.get(str(p)) for p in (mine.get("players") or [])]
+    my_ids = [to_gsis(p) for p in (mine.get("players") or [])]
     st.session_state["team"] = [label_by_id[i] for i in my_ids if i in label_by_id]
     st.session_state["league_info"] = {
         "name": league.get("name", "My league"), "id": league["league_id"],
         "teams": int(league.get("total_rosters") or 12), "ppr": sleeper.ppr_value(league),
-        "rostered": {gsis_by_sleeper.get(str(p)) for p in sleeper.rostered_ids(rosters)} - {None},
+        "scoring": league.get("scoring_settings") or {},
+        "slots": [x for x in (league.get("roster_positions") or DEFAULT_SLOTS) if x in SLOT_ELIG] or DEFAULT_SLOTS,
+        "rostered": {to_gsis(p) for p in sleeper.rostered_ids(rosters)} - {None},
         "mine": set(i for i in my_ids if i), "unmatched": sum(1 for i in my_ids if i not in label_by_id),
+        "my_roster_id": mine.get("roster_id"),
+        "rosters": {r.get("roster_id"): {"owner": names.get(r.get("owner_id"), f"Team {r.get('roster_id')}"),
+                                         "ids": [g for g in (to_gsis(p) for p in (r.get("players") or [])) if g]}
+                    for r in rosters},
     }
+    st.session_state["scoring"] = "My league"
 
 
 def league():
@@ -373,9 +434,40 @@ if league() is None and st.query_params.get("sleeper") and st.query_params.get("
         pass
 
 
+# ---------- scoring ----------
+rates = query("SELECT * FROM player_rates").set_index("player_id")
+
+
+def rescore(df, settings):
+    """Convert full-PPR projections to another scoring system using each player's stat mix."""
+    sc = {**STD_SCORING, **{k: float(v) for k, v in settings.items() if k in STD_SCORING}}
+    r = rates.reindex(df["player_id"]).fillna(0)
+    te = (df["position"].values == "TE").astype(float)
+
+    def pts(w):
+        return (r["receptions"].values * (w["rec"] + te * w["bonus_rec_te"]) + r["receiving_yards"].values * w["rec_yd"]
+                + r["receiving_tds"].values * w["rec_td"] + r["rushing_yards"].values * w["rush_yd"]
+                + r["rushing_tds"].values * w["rush_td"] + r["passing_yards"].values * w["pass_yd"]
+                + r["passing_tds"].values * w["pass_td"] + r["passing_interceptions"].values * w["pass_int"])
+    base, new = pts(STD_SCORING), pts(sc)
+    ratio = np.where((base > 1) & df["position"].isin(["QB", "RB", "WR", "TE"]).values, new / np.maximum(base, 1), 1.0)
+    out = df.copy()
+    for c in ["proj", "floor", "ceiling"]:
+        out[c] = out[c] * ratio
+    return out
+
+
 # ---------- header ----------
-st.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
-chips = [f"Week <b>{next_week}</b> projections", "Full PPR", f"Stats through Week {last_week}"]
+h1, h2 = st.columns([3, 1], vertical_alignment="bottom")
+h1.markdown('<h1>Fantasy Football <span class="hl">Analytics</span></h1>', unsafe_allow_html=True)
+score_opts = (["My league"] if league() else []) + list(SCORING_PRESETS)
+if st.session_state.get("scoring") not in score_opts:
+    st.session_state["scoring"] = score_opts[0]
+scoring_name = h2.selectbox("Scoring", score_opts, key="scoring",
+                            help="Projections are converted to this scoring. 'My league' uses your Sleeper settings.")
+proj = rescore(proj, league()["scoring"] if scoring_name == "My league" else SCORING_PRESETS[scoring_name])
+score_label = f"{league()['name']} scoring" if scoring_name == "My league" else scoring_name
+chips = [f"Week <b>{next_week}</b> projections", score_label, f"Stats through Week {last_week}"]
 if league():
     chips.append(f"Connected: <b>{league()['name']}</b>")
 html(f'<div>{"".join(f"<span class=chip>{c}</span>" for c in chips)}</div>')
@@ -422,6 +514,8 @@ for n in notes:
 # ---------- player profile ----------
 def render_profile(pid, key):
     info = players[players["player_id"] == pid].iloc[0]
+    if info["position"] in ("K", "DST"):
+        return render_kdst_profile(pid, info, key)
     tc = info["color"]
     log = games_cur[games_cur["player_id"] == pid].sort_values("week")
     u = usage[usage["player_id"] == pid].sort_values("week")
@@ -505,6 +599,231 @@ def render_profile(pid, key):
     st.dataframe(gl, hide_index=True, width="stretch", column_config={"PPR": st.column_config.NumberColumn(format="%.1f")})
 
 
+def render_kdst_profile(pid, info, key):
+    fut = proj[proj["player_id"] == pid].sort_values("week")
+    log = kdst_hist[kdst_hist["player_id"] == pid].sort_values("week")
+    nxt = fut.iloc[0]
+    html(f"""<div class="pf" style="--tc:{info['color']}">
+      <img class="hs" src="{info['headshot_url']}">
+      <div><div class="pf-name">{info['name']}</div>
+        <div class="pf-sub">{pill(info['position'])} {team_attr(info['team'], 'team_name', info['team'])}</div>
+        <div class="pf-stats">
+          <div>{log['pts'].mean() if len(log) else 0:.1f}<small>Pts / game</small></div>
+          <div>{nxt['proj']:.1f}<small>Wk {int(nxt['week'])} {nxt['matchup']}</small></div>
+          <div>{fut[fut['week'] <= FANTASY_LAST_WEEK]['proj'].sum():.0f}<small>Rest of season</small></div>
+        </div></div>
+      <img class="pf-logo" src="{info['logo']}"></div>""")
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=log["week"], y=log["pts"], name="Actual", marker_color=POS_COLORS[info["position"]],
+                         customdata=log["opp"], hovertemplate="Week %{x} vs %{customdata}: %{y:.1f}<extra></extra>"))
+    fig.add_trace(go.Scatter(x=fut["week"], y=fut["proj"], name="Projected", mode="markers",
+                             marker=dict(color=ACCENT, size=10, symbol="diamond"),
+                             error_y=dict(type="data", symmetric=False, array=fut["ceiling"] - fut["proj"],
+                                          arrayminus=fut["proj"] - fut["floor"], color="rgba(0,212,180,.25)",
+                                          thickness=6, width=0)))
+    fig.update_layout(title="Season so far and projections ahead", yaxis_title="Fantasy points",
+                      xaxis=dict(dtick=1, title="Week", range=[0.4, 18.6]))
+    st.plotly_chart(plot_style(fig, 360), width="stretch", key=f"{key}_kd")
+    st.caption("Kickers and defenses use Sleeper's default scoring.")
+
+
+def optimize(cands, slots, col="proj"):
+    """Best lineup for these slots: fill the most restrictive slots first, highest projection wins."""
+    order = sorted(range(len(slots)), key=lambda i: len(SLOT_ELIG[slots[i]]))
+    pool = cands.sort_values(col, ascending=False)
+    used, result = set(), [None] * len(slots)
+    for i in order:
+        c = pool[pool["position"].isin(SLOT_ELIG[slots[i]]) & ~pool["player_id"].isin(used)]
+        if len(c):
+            result[i] = c.iloc[0]
+            used.add(result[i]["player_id"])
+    return list(zip(slots, result))
+
+
+def lineup_total(players_, slots):
+    """Fast version of optimize() that only returns the total, for scanning thousands of trades."""
+    order = sorted(slots, key=lambda x: len(SLOT_ELIG[x]))
+    pool = sorted(players_, key=lambda x: -x[2])
+    used, tot = set(), 0.0
+    for sl in order:
+        for p_ in pool:
+            if p_[0] not in used and p_[1] in SLOT_ELIG[sl]:
+                used.add(p_[0])
+                tot += p_[2]
+                break
+    return tot
+
+
+def my_slots():
+    return league()["slots"] if league() else DEFAULT_SLOTS
+
+
+def row_html(slot, r):
+    return f"""<div class="lu-row"><span class="slot">{pill(slot)}</span>
+      <img class="hs" src="{r['headshot_url']}"><img class="logo" src="{r['logo']}">
+      <div class="lu-name">{r['name']} {badge(r['status'])}{wind_badge(r)}<small>{r['position']} · {r['matchup']} ·
+      {r['matchup_grade']} matchup</small></div>
+      <div class="lu-pts">{r['proj']:.1f}<small>{r['floor']:.1f} to {r['ceiling']:.1f}</small></div></div>"""
+
+
+def empty_html(slot, text="Empty"):
+    return f'<div class="lu-row empty"><span class="slot">{pill(slot)}</span><span>{text}</span></div>'
+
+
+def lineup_rows(lineup):
+    return '<div class="lu">' + "".join(row_html(sl, r) if r is not None else empty_html(sl, "No eligible player this week")
+                                        for sl, r in lineup) + "</div>"
+
+
+def win_probability(a, b):
+    """P(team A outscores team B), treating each player's floor-to-ceiling range as roughly normal."""
+    def stats(rows):
+        mu = sum(r["proj"] for r in rows)
+        var = sum(((r["ceiling"] - r["floor"]) / 2.07) ** 2 for r in rows)
+        return mu, var
+    (ma, va), (mb, vb) = stats(a), stats(b)
+    if va + vb == 0:
+        return 0.5
+    return 0.5 * (1 + math.erf((ma - mb) / math.sqrt(2 * (va + vb))))
+
+
+def view_matchup(week):
+    lg = league()
+    try:
+        ms = sl_matchups(lg["id"], week)
+    except sleeper.SleeperError as e:
+        st.error(str(e))
+        return
+    mine = next((m for m in ms if m.get("roster_id") == lg["my_roster_id"]), None)
+    if not mine or mine.get("matchup_id") is None:
+        st.info(f"No Week {week} matchup found in {lg['name']}. It may be a bye, or the playoff bracket isn't set yet.")
+        return
+    opp = next((m for m in ms if m.get("matchup_id") == mine["matchup_id"]
+                and m.get("roster_id") != mine["roster_id"]), None)
+    slots = my_slots()
+    wk_proj = proj[(proj["week"] == week)].drop_duplicates("player_id").set_index("player_id", drop=False)
+
+    def side(m):
+        rows, html_rows = [], []
+        for slot, sid in zip(slots, (m.get("starters") or [])):
+            gid = to_gsis(sid) if sid and str(sid) != "0" else None
+            if gid in wk_proj.index:
+                r = wk_proj.loc[gid]
+                rows.append(r)
+                html_rows.append(row_html(slot, r))
+            else:
+                name = label_by_id.get(gid, "Empty slot" if gid is None else "Player not projected")
+                html_rows.append(empty_html(slot, f"{name} · no game" if gid in label_by_id else name))
+        return rows, '<div class="lu">' + "".join(html_rows) + "</div>"
+
+    my_rows, my_html = side(mine)
+    me_name = lg["rosters"].get(lg["my_roster_id"], {}).get("owner", "You")
+    if opp is None:
+        st.info("Your opponent for this week isn't set yet.")
+        return
+    op_rows, op_html = side(opp)
+    op_name = lg["rosters"].get(opp["roster_id"], {}).get("owner", "Opponent")
+    p = win_probability(my_rows, op_rows)
+    my_tot, op_tot = sum(r["proj"] for r in my_rows), sum(r["proj"] for r in op_rows)
+    html(f"""<div class="mu">
+      <div class="mu-side"><div class="mu-name">{me_name}</div><div class="mu-pts">{my_tot:.1f}</div></div>
+      <div class="mu-mid"><div class="mu-wp">{p * 100:.0f}%</div><small>win probability</small></div>
+      <div class="mu-side right"><div class="mu-name">{op_name}</div><div class="mu-pts">{op_tot:.1f}</div></div>
+    </div>
+    <div class="wp-bar"><div style="width:{p * 100:.1f}%"></div></div>""")
+
+    # could a different lineup from my roster do better?
+    roster_ids = lg["rosters"].get(lg["my_roster_id"], {}).get("ids", [])
+    avail = wk_proj[wk_proj["player_id"].isin(roster_ids) & (wk_proj["status"] != "Out")].reset_index(drop=True)
+    best = optimize(avail, slots)
+    best_tot = sum(r["proj"] for _, r in best if r is not None)
+    if best_tot - my_tot > 0.5:
+        cur_ids = {r["player_id"] for r in my_rows}
+        best_ids = {r["player_id"] for _, r in best if r is not None}
+        start = [label_by_id[i].split(" (")[0] for i in best_ids - cur_ids if i in label_by_id]
+        sit = [label_by_id[i].split(" (")[0] for i in cur_ids - best_ids if i in label_by_id]
+        new_p = win_probability([r for _, r in best if r is not None], op_rows)
+        st.warning(f"**Lineup tip:** start {', '.join(start) or 'nobody new'}"
+                   f"{' instead of ' + ', '.join(sit) if sit else ''}. That's +{best_tot - my_tot:.1f} projected points "
+                   f"and raises your win probability to {new_p * 100:.0f}%. Set it in the Sleeper app.")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"**{me_name}** · your starters in Sleeper")
+        html(my_html)
+    with c2:
+        st.markdown(f"**{op_name}**")
+        html(op_html)
+    st.caption("Win probability treats each starter's floor-to-ceiling range as a bell curve and adds them up.")
+
+
+def use_trade(give_label, get_label):
+    st.session_state["give"] = [give_label]
+    st.session_state["get"] = [get_label]
+    st.session_state["tr_view"] = "Trade analyzer"
+
+
+def view_trade_finder():
+    intro("Trade finder", "Scans every team in your league for 1-for-1 trades that make both starting lineups better, "
+          "so they're trades the other manager has a reason to accept.",
+          "Connect your Sleeper league in My Team, pick the weeks to count, then send an idea to the analyzer.")
+    lg = league()
+    if not lg:
+        st.info("Connect your Sleeper league in the My Team tab to find trades.")
+        return
+    weeks = sorted(proj["week"].unique())
+    end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
+    w0, w1 = st.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default),
+                       key="tf_w")
+    ros = ros_values(w0, w1, lg["teams"], scoring_name).set_index("player_id")
+    slots = my_slots()
+
+    def plist(ids):
+        return [(i, ros.at[i, "position"], float(ros.at[i, "ros"])) for i in ids if i in ros.index]
+
+    mine = plist(lg["rosters"].get(lg["my_roster_id"], {}).get("ids", []))
+    base_me = lineup_total(mine, slots)
+    ideas = []
+    for rid, r in lg["rosters"].items():
+        if rid == lg["my_roster_id"]:
+            continue
+        theirs = plist(r["ids"])
+        base_them = lineup_total(theirs, slots)
+        for a in mine:
+            for b in theirs:
+                if a[2] < 15 or b[2] < 15:
+                    continue
+                gm = lineup_total([x for x in mine if x[0] != a[0]] + [b], slots) - base_me
+                gt = lineup_total([x for x in theirs if x[0] != b[0]] + [a], slots) - base_them
+                if gm > 3 and gt > 3:
+                    ideas.append({"team": r["owner"], "give": a[0], "get": b[0], "gm": gm, "gt": gt})
+    if not ideas:
+        st.info("No trades found that help both lineups. Your roster may already be well balanced, "
+                "or try a different week range.")
+        return
+    # best ideas first, but no player shows up more than twice so the list stays varied
+    picked, seen = [], {}
+    for t in sorted(ideas, key=lambda x: (-min(x["gm"], x["gt"]), -x["gm"])):
+        if seen.get(t["give"], 0) < 2 and seen.get(t["get"], 0) < 2:
+            picked.append(t)
+            seen[t["give"]] = seen.get(t["give"], 0) + 1
+            seen[t["get"]] = seen.get(t["get"], 0) + 1
+        if len(picked) == 12:
+            break
+    ideas = picked
+    st.markdown(f"**{len(ideas)} win-win trade ideas** · gains are rest-of-season points from your starting lineup")
+    for k, t in enumerate(ideas):
+        g, r = players.set_index("player_id").loc[t["give"]], players.set_index("player_id").loc[t["get"]]
+        c1, c2, c3, c4 = st.columns([3, 3, 2, 1.3], vertical_alignment="center")
+        c1.markdown(f"Give {pill(g['position'])} **{g['name']}**", unsafe_allow_html=True)
+        c2.markdown(f"Get {pill(r['position'])} **{r['name']}** from {t['team']}", unsafe_allow_html=True)
+        c3.markdown(f"You **+{t['gm']:.0f}** · them +{t['gt']:.0f}")
+        c4.button("Analyze", key=f"tf_{k}", on_click=use_trade, args=(label_by_id[t["give"]], label_by_id[t["get"]]),
+                  width="stretch")
+    st.caption("Uses your league's roster slots and scoring. Value is what each player adds to a starting lineup, "
+               "so depth that wouldn't start counts for nothing.")
+
+
+
 # ---------- tabs ----------
 
 def view_projections():
@@ -558,7 +877,7 @@ def view_rankings():
     rk_n = c2.selectbox("League size", sizes, index=sizes.index(default_n), key="rk_n")
     with c3:
         rk_pos = position_filter("rk_pos")
-    rk = ros_values(rw0, rw1, rk_n)
+    rk = ros_values(rw0, rw1, rk_n, scoring_name)
     rk = rk[rk["position"].isin(rk_pos)].copy()
     if league():
         rk["owner"] = rk["player_id"].map(
@@ -617,12 +936,10 @@ def view_team():
                 c2.error(str(e))
         if league():
             lg = league()
-            extra = f" {lg['unmatched']} roster spots (kickers, defenses, or new players) aren't projected here." \
+            extra = f" {lg['unmatched']} roster spots (IDP or brand-new players) aren't projected here." \
                 if lg["unmatched"] else ""
             st.success(f"Connected to **{lg['name']}** ({lg['teams']} teams).{extra}")
-            if lg["ppr"] != 1.0:
-                st.caption(f"Heads up: your league gives {lg['ppr']:g} points per reception. Projections here are full PPR, "
-                           "so pass catchers will look a bit better than they score in your league.")
+            st.caption("Projections now use your league's scoring and lineup slots. Change it with the Scoring menu at the top.")
 
     init_from_url("team", "team")
     c1, c2 = st.columns([4, 1])
@@ -630,6 +947,13 @@ def view_team():
     c2.button("Load example team", width="stretch", on_click=load_example_team)
     sync_url("team", roster)
     t_week = st.selectbox("Week", sorted(proj["week"].unique()), key="team_week")
+
+    if league():
+        st.session_state.setdefault("team_view", "My lineup")
+        mode = st.segmented_control("Show", ["My lineup", "This week's matchup"], required=True, key="team_view",
+                                    label_visibility="collapsed")
+        if mode == "This week's matchup":
+            return view_matchup(t_week)
 
     if not roster:
         st.info("Import from Sleeper, add players by hand, or load the example team to see your optimal lineup.")
@@ -640,17 +964,8 @@ def view_team():
         out = avail[avail["status"] == "Out"]
         avail = avail[avail["status"] != "Out"].sort_values("proj", ascending=False)
 
-        slots = [("QB", ["QB"]), ("RB", ["RB"]), ("RB", ["RB"]), ("WR", ["WR"]), ("WR", ["WR"]),
-                 ("TE", ["TE"]), ("FLEX", ["RB", "WR", "TE"])]
-        used, lineup = set(), []
-        for slot, elig in slots:
-            pool = avail[avail["position"].isin(elig) & ~avail["player_id"].isin(used)]
-            if len(pool):
-                r = pool.iloc[0]
-                used.add(r["player_id"])
-                lineup.append((slot, r))
-            else:
-                lineup.append((slot, None))
+        lineup = optimize(avail, my_slots())
+        used = {r["player_id"] for _, r in lineup if r is not None}
         bench = avail[~avail["player_id"].isin(used)]
 
         a, b, c = st.columns(3)
@@ -658,27 +973,15 @@ def view_team():
         b.metric("Floor", f"{sum(r['floor'] for _, r in lineup if r is not None):.1f}")
         c.metric("Ceiling", f"{sum(r['ceiling'] for _, r in lineup if r is not None):.1f}")
 
-        rows_html = []
-        for slot, r in lineup:
-            if r is None:
-                rows_html.append(f'<div class="lu-row empty"><span class="slot">{pill(slot)}</span>'
-                                 '<span>No eligible player this week</span></div>')
-                continue
-            rows_html.append(f"""<div class="lu-row"><span class="slot">{pill(slot)}</span>
-              <img class="hs" src="{r['headshot_url']}"><img class="logo" src="{r['logo']}">
-              <div class="lu-name">{r['name']} {badge(r['status'])}{wind_badge(r)}<small>{r['position']} · {r['matchup']} ·
-              {r['matchup_grade']} matchup</small></div>
-              <div class="lu-pts">{r['proj']:.1f}<small>{r['floor']:.1f} to {r['ceiling']:.1f}</small></div></div>""")
-        html(f'<div class="lu">{"".join(rows_html)}</div>')
+        html(lineup_rows(lineup))
 
         calls = []
         for slot, r in lineup:
             if r is None:
                 continue
-            elig = ["RB", "WR", "TE"] if slot == "FLEX" else [slot]
-            alt = bench[bench["position"].isin(elig)]
+            alt = bench[bench["position"].isin(SLOT_ELIG[slot])]
             if len(alt) and r["proj"] - alt.iloc[0]["proj"] < 1.5:
-                calls.append(f"**{slot}:** {r['name']} ({r['proj']:.1f}) over {alt.iloc[0]['name']} "
+                calls.append(f"**{SLOT_LABEL.get(slot, slot)}:** {r['name']} ({r['proj']:.1f}) over {alt.iloc[0]['name']} "
                              f"({alt.iloc[0]['proj']:.1f})")
         alerts = []
         if on_bye:
@@ -718,7 +1021,7 @@ def view_team():
         weakest = {}
         for slot, r in lineup:
             if r is not None:
-                for p_ in (["RB", "WR", "TE"] if slot == "FLEX" else [slot]):
+                for p_ in SLOT_ELIG[slot]:
                     if p_ not in weakest or r["proj"] < weakest[p_][1]:
                         weakest[p_] = (r["name"], r["proj"])
         pool = proj[(proj["week"] == t_week) & ~proj["player_id"].isin(ids) & (proj["status"] != "Out")]
@@ -857,7 +1160,7 @@ def view_trades():
     get = c2.multiselect("You get", labels, key="get", placeholder="Players you're receiving")
     sync_url("give", give)
     sync_url("get", get)
-    vals = ros_values(w0, w1, teams_n).set_index("player_id")
+    vals = ros_values(w0, w1, teams_n, scoring_name).set_index("player_id")
 
     def side(labs):
         rows_ = []
@@ -1005,20 +1308,26 @@ names = ["This Week", "My Team", "Rankings", "Players", "Trades", "How It Works"
 tabs = dict(zip(names, st.tabs(names, default=default_tab)))
 
 with tabs["This Week"]:
+    st.session_state.setdefault("tw_view", "Start / Sit" if "ss" in qp else "Projections")
     view = st.segmented_control("View", ["Projections", "Start / Sit"], required=True, key="tw_view",
-                                default="Start / Sit" if "ss" in qp else "Projections", label_visibility="collapsed")
+                                label_visibility="collapsed")
     view_projections() if view == "Projections" else view_startsit()
 with tabs["My Team"]:
     view_team()
 with tabs["Rankings"]:
+    st.session_state.setdefault("rk_view", "Rest of season")
     view = st.segmented_control("View", ["Rest of season", "Breakouts"], required=True, key="rk_view",
-                                default="Rest of season", label_visibility="collapsed")
+                                label_visibility="collapsed")
     view_rankings() if view == "Rest of season" else view_breakouts()
 with tabs["Players"]:
     view_players()
 with tabs["Trades"]:
-    view_trades()
+    st.session_state.setdefault("tr_view", "Trade analyzer")
+    view = st.segmented_control("View", ["Trade analyzer", "Trade finder"], required=True, key="tr_view",
+                                label_visibility="collapsed")
+    view_trades() if view == "Trade analyzer" else view_trade_finder()
 with tabs["How It Works"]:
+    st.session_state.setdefault("hw_view", "Accuracy")
     view = st.segmented_control("View", ["Accuracy", "The model"], required=True, key="hw_view",
-                                default="Accuracy", label_visibility="collapsed")
+                                label_visibility="collapsed")
     view_accuracy() if view == "Accuracy" else view_model()

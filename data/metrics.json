@@ -183,5 +183,17 @@
       "importance": 0.001
     }
   ],
-  "train_rows": 29967
+  "train_rows": 29967,
+  "kdst": {
+    "K": {
+      "model_mae": 3.84,
+      "baseline_mae": 3.98,
+      "games": 536
+    },
+    "DST": {
+      "model_mae": 4.34,
+      "baseline_mae": 4.61,
+      "games": 544
+    }
+  }
 }
