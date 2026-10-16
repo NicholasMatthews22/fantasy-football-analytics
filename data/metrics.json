@@ -1,0 +1,187 @@
+{
+  "backtest": {
+    "2025 season": [
+      {
+        "position": "ALL",
+        "games": 3129,
+        "model_mae": 5.78,
+        "baseline_mae": 5.98,
+        "range_hit_rate": 0.686,
+        "rank_corr": 0.474
+      },
+      {
+        "position": "QB",
+        "games": 581,
+        "model_mae": 6.59,
+        "baseline_mae": 6.9,
+        "range_hit_rate": 0.651,
+        "rank_corr": 0.406
+      },
+      {
+        "position": "RB",
+        "games": 798,
+        "model_mae": 5.89,
+        "baseline_mae": 6.05,
+        "range_hit_rate": 0.674,
+        "rank_corr": 0.472
+      },
+      {
+        "position": "WR",
+        "games": 1235,
+        "model_mae": 5.61,
+        "baseline_mae": 5.76,
+        "range_hit_rate": 0.717,
+        "rank_corr": 0.45
+      },
+      {
+        "position": "TE",
+        "games": 515,
+        "model_mae": 5.13,
+        "baseline_mae": 5.34,
+        "range_hit_rate": 0.67,
+        "rank_corr": 0.28
+      }
+    ],
+    "2026 season so far": [
+      {
+        "position": "ALL",
+        "games": 928,
+        "model_mae": 5.9,
+        "baseline_mae": 6.13,
+        "range_hit_rate": 0.682,
+        "rank_corr": 0.503
+      },
+      {
+        "position": "QB",
+        "games": 167,
+        "model_mae": 6.55,
+        "baseline_mae": 6.63,
+        "range_hit_rate": 0.731,
+        "rank_corr": 0.382
+      },
+      {
+        "position": "RB",
+        "games": 235,
+        "model_mae": 5.86,
+        "baseline_mae": 6.13,
+        "range_hit_rate": 0.672,
+        "rank_corr": 0.537
+      },
+      {
+        "position": "WR",
+        "games": 357,
+        "model_mae": 5.84,
+        "baseline_mae": 6.07,
+        "range_hit_rate": 0.683,
+        "rank_corr": 0.458
+      },
+      {
+        "position": "TE",
+        "games": 169,
+        "model_mae": 5.48,
+        "baseline_mae": 5.79,
+        "range_hit_rate": 0.645,
+        "rank_corr": 0.308
+      }
+    ]
+  },
+  "importance": [
+    {
+      "feature": "ewm_ppr",
+      "importance": 1.309
+    },
+    {
+      "feature": "season_avg_ppr",
+      "importance": 0.225
+    },
+    {
+      "feature": "l3_opportunities",
+      "importance": 0.075
+    },
+    {
+      "feature": "implied_total",
+      "importance": 0.068
+    },
+    {
+      "feature": "ewm_passing_yards",
+      "importance": 0.065
+    },
+    {
+      "feature": "ewm_opportunities",
+      "importance": 0.06
+    },
+    {
+      "feature": "ewm_wopr",
+      "importance": 0.044
+    },
+    {
+      "feature": "ewm_target_share",
+      "importance": 0.039
+    },
+    {
+      "feature": "ewm_carry_share",
+      "importance": 0.035
+    },
+    {
+      "feature": "l3_ppr",
+      "importance": 0.033
+    },
+    {
+      "feature": "ewm_total_tds",
+      "importance": 0.029
+    },
+    {
+      "feature": "def_factor",
+      "importance": 0.027
+    },
+    {
+      "feature": "ewm_attempts",
+      "importance": 0.026
+    },
+    {
+      "feature": "ewm_targets",
+      "importance": 0.025
+    },
+    {
+      "feature": "games_played",
+      "importance": 0.009
+    },
+    {
+      "feature": "ewm_receiving_air_yards",
+      "importance": 0.008
+    },
+    {
+      "feature": "ewm_receptions",
+      "importance": 0.007
+    },
+    {
+      "feature": "ewm_air_yards_share",
+      "importance": 0.006
+    },
+    {
+      "feature": "ewm_receiving_yards",
+      "importance": 0.006
+    },
+    {
+      "feature": "pos_code",
+      "importance": 0.005
+    },
+    {
+      "feature": "ewm_rushing_yards",
+      "importance": 0.005
+    },
+    {
+      "feature": "spread",
+      "importance": 0.003
+    },
+    {
+      "feature": "home",
+      "importance": 0.002
+    },
+    {
+      "feature": "ewm_carries",
+      "importance": 0.001
+    }
+  ],
+  "train_rows": 29967
+}
