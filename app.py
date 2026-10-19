@@ -474,11 +474,17 @@ def plot_style(fig, height=340, legend_below=True):
 
 # ---------- data ----------
 @st.cache_data
-def query(sql):
+def _query(sql, db_version):
     with sqlite3.connect(DB_PATH) as con:
         return pd.read_sql(sql, con)
 
 
+def query(sql):
+    """Cached read that refreshes automatically whenever the database file changes (each data update)."""
+    return _query(sql, DB_PATH.stat().st_mtime)
+
+
+DB_VERSION = DB_PATH.stat().st_mtime
 teams = query("SELECT * FROM teams").set_index("team")
 proj = query("SELECT * FROM projections")
 breakouts = query("SELECT * FROM breakouts")
@@ -615,7 +621,7 @@ def sync_url(param, chosen_labels):
 
 
 @st.cache_data
-def ros_values(w0, w1, teams_n, scoring_key=""):
+def ros_values(w0, w1, teams_n, scoring_key="", db_version=None):
     """Rest-of-season points and value over a replacement-level starter for every active player."""
     r = (proj[proj["week"].between(w0, w1)].groupby("player_id")
          .agg(ros=("proj", "sum"), games=("proj", "size")).reset_index())
@@ -1097,7 +1103,7 @@ def league_market_values():
 
 
 @st.cache_data(ttl=900, show_spinner=False)
-def run_season_sim(league_id, scoring_key, n_sims=5000):
+def run_season_sim(league_id, scoring_key, db_version=None, n_sims=5000):
     lg = league()
     slots = my_slots()
     rids = list(lg["rosters"])
@@ -1153,7 +1159,7 @@ def view_league():
         st.info("Connect your Sleeper league in My Team to see power rankings and playoff odds.")
         return
     with st.spinner("Simulating the rest of the season..."):
-        res = run_season_sim(lg["id"], scoring_name)
+        res = run_season_sim(lg["id"], scoring_name, DB_VERSION)
     rows = []
     for i, r in enumerate(res["rids"]):
         t = lg["rosters"][r]
@@ -1210,7 +1216,7 @@ def view_trade_finder():
     tol = c3.selectbox("Fairness", ["Strict (±8%)", "Normal (±15%)", "Loose (±25%)"], index=1, key="tf_tol")
     tol = {"Strict (±8%)": .08, "Normal (±15%)": .15, "Loose (±25%)": .25}[tol]
 
-    ros = ros_values(w0, w1, lg["teams"], scoring_name).set_index("player_id")
+    ros = ros_values(w0, w1, lg["teams"], scoring_name, DB_VERSION).set_index("player_id")
     market = league_market_values()
     if market:
         value = lambda pid: market.get(pid, 0.0)
@@ -1365,7 +1371,7 @@ def view_rankings():
     rk_n = c2.selectbox("League size", sizes, index=sizes.index(default_n), key="rk_n")
     with c3:
         rk_pos = position_filter("rk_pos")
-    rk = ros_values(rw0, rw1, rk_n, scoring_name)
+    rk = ros_values(rw0, rw1, rk_n, scoring_name, DB_VERSION)
     rk = rk[rk["position"].isin(rk_pos)].copy()
     if league():
         rk["owner"] = rk["player_id"].map(
@@ -1653,7 +1659,7 @@ def view_trades():
     get = c2.multiselect("You get", labels, key="get", placeholder="Players you're receiving")
     sync_url("give", give)
     sync_url("get", get)
-    vals = ros_values(w0, w1, teams_n, scoring_name).set_index("player_id")
+    vals = ros_values(w0, w1, teams_n, scoring_name, DB_VERSION).set_index("player_id")
 
     def side(labs):
         rows_ = []
@@ -1813,7 +1819,10 @@ with nav_box:
 tabs = {n: st.container() if n == section else None for n in names}
 
 if section == "This Week":
-    section_header("This week", f"Stats through Week {last_week}")
+    live = (proj["week"] == next_week) & (proj["status"] == "Final")
+    sub = (f"Week {next_week} in progress · {proj.loc[live, 'team'].nunique()} teams have played"
+           if live.any() else f"Stats through Week {last_week}")
+    section_header("This week", sub)
     render_home_summary()
     st.write("")
     st.session_state["_nested"] = True
