@@ -31,25 +31,25 @@ DEFAULT_SLOTS = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"]
 STD_SCORING = {"rec": 1.0, "rec_yd": 0.1, "rec_td": 6, "rush_yd": 0.1, "rush_td": 6, "pass_yd": 0.04,
                "pass_td": 4, "pass_int": -1, "bonus_rec_te": 0}
 SCORING_PRESETS = {"Full PPR": {}, "Half PPR": {"rec": 0.5}, "Standard (no PPR)": {"rec": 0.0}}
-ACCENT, MUTED = "#9b6bff", "#8b93a7"
+ACCENT, MUTED = "#9b6bff", "#a3abbd"
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap');
 :root { --surface: #1a1f2c; --surface2: #222838; --line: #2b3244; --muted: #8b93a7; --accent: #9b6bff;
   --qb: #ff4f81; --rb: #22d3b6; --wr: #58b6ff; --te: #ffb35c; }
 .block-container { padding-top: 2rem !important; max-width: 1280px; }
 h1, h2, h3, .stTabs button p, [data-testid="stMetricValue"], .num {
-  font-family: 'Inter', 'Segoe UI', sans-serif !important; }
+  font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif !important; }
 h1 { font-weight: 800 !important; letter-spacing: -.5px; font-size: 2.1rem !important; }
 [data-testid="stMarkdownContainer"] p, [data-testid="stWidgetLabel"] p, .stApp input, .stApp button p,
-.gl-card, .lu-row, .pc-row, .ss-card, .note, .chip { font-family: 'Inter', 'Segoe UI', sans-serif; }
+.gl-card, .lu-row, .pc-row, .ss-card, .note, .chip { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; }
 .gl-pts, .lu-pts, .pc-pts, .ss-proj, .mu-pts, .mu-wp, .pf-stats div { font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
 
 /* page header */
 .ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   border-bottom: 1px solid var(--line); padding-bottom: 12px; margin: 0 0 16px; }
-.ph h2 { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -.4px; margin: 0; padding: 0; }
+.ph h2 { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 800; font-size: 1.6rem; letter-spacing: -.4px; margin: 0; padding: 0; }
 .ph .info { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 8px;
   border-radius: 50%; border: 1px solid var(--muted); color: var(--muted); font-size: .7rem; font-weight: 700;
   cursor: help; vertical-align: middle; position: relative; top: -3px; }
@@ -82,7 +82,7 @@ header[data-testid="stHeader"] { background: transparent !important; height: 2.6
 /* sidebar menu */
 section[data-testid="stSidebar"] { background: #141824 !important; border-right: 1px solid var(--line); }
 section[data-testid="stSidebar"] .brand-row { display: flex; align-items: center; gap: 10px; margin: -8px 0 18px; }
-section[data-testid="stSidebar"] .brand { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 1.1rem;
+section[data-testid="stSidebar"] .brand { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 800; font-size: 1.1rem;
   line-height: 1.1; letter-spacing: -.3px; }
 section[data-testid="stSidebar"] .brand span { color: var(--accent); }
 section[data-testid="stSidebar"] .side-sub { color: var(--muted); font-size: .74rem; margin-top: 2px; }
@@ -110,7 +110,7 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .flabel { font-size: .875rem; margin-bottom: .25rem; min-height: 1.4rem; display: flex; align-items: flex-end; }
 .intro { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px;
   margin: 4px 0 14px; }
-.intro-t { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.25rem; }
+.intro-t { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 1.25rem; }
 .intro-w { color: #cfd5e3; margin-top: 2px; }
 .intro-h { color: var(--muted); font-size: .82rem; margin-top: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line);
@@ -141,7 +141,7 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .gl-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); font-weight: 600; }
 .gl-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gl-meta { font-size: .8rem; color: var(--muted); }
-.gl-pts { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
+.gl-pts { margin-left: auto; font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .gl-pts small { display: block; font-size: .65rem; font-weight: 500; color: var(--muted); text-align: right; }
 .note { font-size: .85rem; color: #cfd5e3; margin: 0 0 8px; }
 
@@ -150,14 +150,14 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .ss-card { border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
 .ss-card.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px rgba(155,107,255,.15); }
 .ss-band { background: var(--tc); color: #fff; display: flex; align-items: center; gap: 8px; padding: 7px 12px;
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+  font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
 .ss-band img { width: 24px; height: 24px; background: rgba(255,255,255,.92); border-radius: 50%; padding: 2px; }
 .ss-band .badge { margin-left: auto; }
 .ss-body { padding: 14px; text-align: center; }
 .ss-body .hs { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
 .ss-name { font-weight: 700; font-size: 1.05rem; margin-top: 6px; }
 .ss-meta { font-size: .8rem; color: var(--muted); }
-.ss-proj { font-family: 'Inter', sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
+.ss-proj { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; margin-top: 6px; }
 .ss-proj span { font-size: .75rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
 .range { position: relative; height: 8px; border-radius: 4px; background: var(--surface2); margin: 12px 4px 4px; }
 .range-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); opacity: .45; }
@@ -172,11 +172,11 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   background: linear-gradient(110deg, var(--tc) 0%, color-mix(in srgb, var(--tc) 55%, #10131c) 70%, #10131c 100%); }
 .pf .hs { width: 104px; height: 104px; border-radius: 50%; object-fit: cover; object-position: top;
   background: rgba(255,255,255,.15); border: 3px solid rgba(255,255,255,.85); }
-.pf-name { font-family: 'Inter', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
+.pf-name { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.05; }
 .pf-sub { opacity: .9; margin-top: 4px; }
 .pf-logo { width: 76px; height: 76px; margin-left: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
 .pf-stats { display: flex; gap: 22px; margin-top: 10px; flex-wrap: wrap; }
-.pf-stats div { font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.pf-stats div { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.4rem; font-weight: 700; line-height: 1; }
 .pf-stats small { display: block; font-family: inherit; font-size: .64rem; font-weight: 500; opacity: .8;
   text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
 
@@ -190,14 +190,14 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .lu-row .logo { width: 22px; height: 22px; flex: none; }
 .lu-name { font-weight: 700; font-size: .92rem; min-width: 0; line-height: 1.2; }
 .lu-name small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
-.lu-pts { margin-left: auto; text-align: right; font-family: 'Inter', sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.lu-pts { margin-left: auto; text-align: right; font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.2rem; font-weight: 700; line-height: 1; }
 .lu-pts small { display: block; font-size: .62rem; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
 /* projection cards */
 .pc { display: grid; gap: 6px; }
 .pc-row { display: grid; grid-template-columns: 44px 46px minmax(0, 1fr) minmax(0, 150px) 86px; align-items: center;
   gap: 12px; padding: 8px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
-.pc-rank { font-family: 'Inter', sans-serif; font-weight: 700; color: var(--muted); font-size: .85rem; }
+.pc-rank { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; color: var(--muted); font-size: .85rem; }
 .pc-row .hs { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
 .pc-main { min-width: 0; }
 .pc-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -205,7 +205,7 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .pc-meta .good { color: var(--rb); font-weight: 700; } .pc-meta .tough { color: var(--qb); font-weight: 700; }
 .pc-range .range { margin: 4px 0 3px; }
 .pc-range .range-lbl { font-size: .66rem; }
-.pc-pts { text-align: right; font-family: 'Inter', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
+.pc-pts { text-align: right; font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .pc-pts small { display: block; font-size: .62rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
 /* matchup */
@@ -213,9 +213,9 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
 .mu-side.right { text-align: right; }
 .mu-name { font-weight: 700; color: #cfd5e3; }
-.mu-pts { font-family: 'Inter', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+.mu-pts { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
 .mu-mid { text-align: center; }
-.mu-wp { font-family: 'Inter', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.mu-wp { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
 .mu-mid small { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; }
 .wp-bar { height: 8px; border-radius: 4px; background: var(--qb); margin: 10px 0 14px; overflow: hidden; }
 .wp-bar div { height: 100%; background: var(--accent); }
@@ -344,6 +344,65 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .tf-g.me { background: rgba(155,107,255,.18); color: #c9b3ff; }
 .tf-g.them { background: var(--surface2); color: var(--muted); }
 
+/* ---------- cleanup pass: flatter, higher contrast, fewer decorations ---------- */
+:root { --muted: #a3abbd; --line: #30384c; --surface: #191e2a; --surface2: #232a3a; }
+.gl-pts, .lu-pts, .pc-pts, .ss-proj, .mu-pts, .sb-pts, .pf-stats div, .hl-pts, .pr-num, .pr-bar b, .tf-lbl span {
+  font-stretch: 88%; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+h2, h3, .ph h2 { letter-spacing: -.2px !important; }
+.pos-FLEX { background: #c7cdda; }
+.badge { text-transform: none; letter-spacing: 0; font-weight: 700; font-size: .7rem; }
+.pf { background: var(--surface); border: 1px solid var(--line); color: #e8ebf2; }
+.pf .hs { border: 0; background: var(--surface2); }
+.pf-stats small { text-transform: none; letter-spacing: 0; font-size: .72rem; opacity: 1; color: var(--muted); }
+.pf-logo { filter: none; }
+.ss-card.best { border-color: var(--line); box-shadow: none; }
+.ss-band { background: var(--surface2); color: #e8ebf2; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.ss-band img { background: transparent; padding: 0; }
+.pick { top: 46px; background: #e8ebf2; color: #10131c; letter-spacing: 0; }
+.range-bar { opacity: .35; }
+.range-dot { border-width: 2px; }
+.lu-row.empty { opacity: 1; color: var(--muted); }
+.tf-lbl, .pr-head { text-transform: none; letter-spacing: 0; font-size: .76rem; }
+.tf-arrow { font-size: .75rem; padding-top: 30px; }
+.pr-row.mine { border-color: var(--line); box-shadow: none; background: #222a3c; }
+.pr-row.mine .pr-name::after { content: "You"; margin-left: 8px; font-size: .68rem; font-weight: 700; padding: 1px 6px;
+  border-radius: 4px; background: #e8ebf2; color: #10131c; vertical-align: middle; }
+.sb-wk { letter-spacing: 0; font-size: .78rem; }
+.mu-mid small { text-transform: none; letter-spacing: 0; }
+span[data-baseweb="tag"], [data-testid="stMultiSelectTagsContainer"] > div { border-color: var(--line) !important; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] { transition: none; padding: 8px 12px; border-radius: 8px; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] { background: var(--surface2); }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p { color: #fff !important; font-weight: 700; }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"]::before { content: ""; width: 3px;
+  align-self: stretch; margin: 2px 9px 2px -4px; border-radius: 2px; background: var(--accent); }
+section[data-testid="stSidebar"] [data-testid="stRadioOption"] p { color: #c3c9d6; font-weight: 500; }
+.stApp button { transition: none !important; }
+.stCaption, [data-testid="stCaptionContainer"] { color: var(--muted) !important; }
+
+/* home summary: two plain lists */
+.home { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; margin: 0 0 24px; }
+.home-h { font-weight: 700; font-size: .95rem; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.hl-row { display: grid; grid-template-columns: 32px 32px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--line); }
+.hl-pos { font-size: .78rem; font-weight: 700; color: var(--muted); }
+.hl-row .hs { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
+.hl-main { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hl-main small { color: var(--muted); font-size: .8rem; margin-left: 6px; }
+.hl-pts { font-weight: 700; font-size: 1.1rem; }
+.nt-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--line); font-size: .9rem; line-height: 1.45; }
+.nt-k { color: var(--muted); }
+.nt-v { color: #d4d9e4; }
+.nt-v b { color: #fff; }
+
+/* consistent spacing: 8 / 12 / 16 / 24 */
+.lu { gap: 6px; margin: 8px 0 16px; }
+.pc { gap: 6px; }
+.tf-card { margin-bottom: 8px; }
+.ph { margin-bottom: 16px; }
+.ph.sub { margin: 8px 0 12px; }
+[data-testid="stMetric"] { border-radius: 12px; padding: 12px 16px; }
+
 /* phones */
 @media (max-width: 900px) {
   .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -374,6 +433,8 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
   .pc-row .hs { width: 38px; height: 38px; }
   .pc-range { display: none; }
   .pc-pts { font-size: 1.2rem; }
+  .home { grid-template-columns: 1fr; gap: 16px; }
+  .nt-row { grid-template-columns: 1fr; gap: 2px; }
   .tf-sides { grid-template-columns: 1fr; }
   .pr-head { display: none; }
   .pr-row { grid-template-columns: 18px minmax(0, 1fr) 40px 62px 48px; gap: 7px; padding: 8px 10px; font-size: .85rem; }
@@ -403,7 +464,7 @@ POS_STYLE = {p: f"color:{c};font-weight:800" for p, c in POS_COLORS.items()}
 def plot_style(fig, height=340, legend_below=True):
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=46, b=60 if legend_below else 30),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font=dict(color="#cfd5e3"), title_font=dict(family="Inter", size=14))
+                      font=dict(color="#d4d9e4", family="Archivo, Helvetica Neue, Arial, sans-serif"), title_font=dict(family="Archivo", size=14))
     fig.update_xaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
     fig.update_yaxes(gridcolor="#232a3a", zerolinecolor="#2b3244")
     if legend_below:
@@ -708,45 +769,37 @@ def section_header(title, sub=""):
 
 
 def render_home_summary():
-
     wk = proj[(proj["week"] == next_week) & ~proj["status"].isin(["Out", "Final"])]
-    cards = []
+    top = []
     for pos_ in ["QB", "RB", "WR", "TE"]:
         r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
-        cards.append(f"""<div class="gl-card" style="--tc:{POS_COLORS[pos_]}">
-          <img class="hs" src="{r['headshot_url']}"><div class="gl-txt">
-          <div class="gl-lbl">{pill(pos_)} Top</div><div class="gl-name">{r['name']}</div>
-          <div class="gl-meta">{r['team']} {r['matchup']} {badge(r['status'])}</div></div>
-          <div class="gl-pts">{r['proj']:.1f}<small>proj</small></div></div>""")
-    html(f'<div class="gl-grid">{"".join(cards)}</div>')
+        top.append(f"""<div class="hl-row"><span class="hl-pos">{pos_}</span><img class="hs" src="{r['headshot_url']}">
+          <span class="hl-main"><b>{r['name']}</b> {badge(r['status'])}<small>{r['team']} {r['matchup']}</small></span>
+          <span class="hl-pts">{r['proj']:.1f}</span></div>""")
 
     smash = wk[wk["proj"] >= 12].nlargest(1, "def_factor").iloc[0]
     bo = breakouts.iloc[0]
     hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
-    html(f"""<div class="gl-grid three">
-      <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{smash['headshot_url']}"><div class="gl-txt">
-        <div class="gl-lbl">Best matchup</div><div class="gl-name">{smash['name']}</div>
-        <div class="gl-meta">{smash['matchup']} allows {(smash['def_factor'] - 1) * 100:+.0f}% to {smash['position']}s</div></div></div>
-      <div class="gl-card" style="--tc:{ACCENT}"><img class="hs" src="{bo['headshot_url']}"><div class="gl-txt">
-        <div class="gl-lbl">Top breakout candidate</div><div class="gl-name">{bo['name']}</div>
-        <div class="gl-meta">Targets + carries {bo['opps_before']:.1f} → {bo['opps_last3']:.1f} per game</div></div></div>
-      <div class="gl-card" style="--tc:{ACCENT}"><img class="logo" src="{hi['logo']}"><div class="gl-txt">
-        <div class="gl-lbl">Highest-scoring offense</div><div class="gl-name">{team_attr(hi['team'], 'team_name', hi['team'])}</div>
-        <div class="gl-meta">Vegas expects {hi['implied_total']:.1f} pts {hi['matchup']}</div></div></div>
-    </div>""")
-
-    notes = []
+    notes = [
+        ("Best matchup", f"<b>{smash['name']}</b> {smash['matchup']}. That defense allows "
+                         f"{(smash['def_factor'] - 1) * 100:.0f}% more points than average to {smash['position']}s."),
+        ("Breakout to watch", f"<b>{bo['name']}</b> went from {bo['opps_before']:.1f} to {bo['opps_last3']:.1f} "
+                              "targets and carries per game over his last 3."),
+        ("Highest team total", f"<b>{team_attr(hi['team'], 'team_name', hi['team'])}</b> {hi['matchup']}, "
+                               f"{hi['implied_total']:.1f} points expected by Vegas."),
+    ]
     if not injury_posted:
-        notes.append(f'<span class="badge b-Questionable">Injuries</span> The Week {next_week} injury report isn\'t final '
-                     "yet. Statuses update automatically Saturday and Sunday mornings.")
+        notes.append(("Injuries", f"The Week {next_week} report isn't final. Statuses update Saturday and Sunday mornings."))
     windy = wk[wk["windy"]].drop_duplicates("game_id")
     if len(windy):
         games_txt = ", ".join(f"{r['team']} {r['matchup']} ({r['wind']:.0f} mph)" for _, r in windy.iterrows())
-        notes.append(f'<span class="badge b-wind">Wind watch</span> {games_txt}. In backtests, QBs in 15+ mph wind '
-                     "scored about 3 points below projection.")
-    for n in notes:
-        html(f'<div class="note">{n}</div>')
-
+        notes.append(("Wind", f"{games_txt}. QBs in 15+ mph wind have scored about 3 points under projection."))
+    note_rows = "".join(f'<div class="nt-row"><span class="nt-k">{k}</span><span class="nt-v">{v}</span></div>'
+                        for k, v in notes)
+    html(f"""<div class="home">
+      <div class="home-col"><div class="home-h">Top projected</div>{"".join(top)}</div>
+      <div class="home-col"><div class="home-h">Worth knowing</div>{note_rows}</div>
+    </div>""")
 
 
 # ---------- player profile ----------
@@ -995,7 +1048,7 @@ def view_matchup(week):
       <div class="sb-team">{avatar_html(me_t, 52)}<div><div class="sb-name">{me_name}</div>
         <div class="sb-rec">{record(me_t)} · {me_t.get('pf', 0):.0f} PF</div></div>
         <div class="sb-pts">{my_tot:.1f}</div></div>
-      <div class="sb-mid"><div class="sb-wk">WEEK {week}</div><div class="sb-vs">projected</div></div>
+      <div class="sb-mid"><div class="sb-wk">Week {week}</div><div class="sb-vs">projected</div></div>
       <div class="sb-team right"><div class="sb-pts">{op_tot:.1f}</div><div><div class="sb-name">{op_name}</div>
         <div class="sb-rec">{record(op_t)} · {op_t.get('pf', 0):.0f} PF</div></div>{avatar_html(op_t, 52)}</div>
       <div class="sb-wp"><span>{p * 100:.0f}%</span><div class="wp-bar"><div style="width:{p * 100:.1f}%"></div></div>
@@ -1142,7 +1195,7 @@ def package_value(vals):
 
 def view_trade_finder():
     intro("Trade finder", "Finds trades with each team in your league that are fair by market value and make both "
-          "starting lineups better, so the other manager has a real reason to say yes.",
+          "starting lineups better, so the other manager has a reason to accept.",
           "Connect your Sleeper league in My Team. Open any idea in the trade analyzer to look closer.")
     lg = league()
     if not lg:
@@ -1243,7 +1296,7 @@ def view_trade_finder():
               <div class="tf-head"><span class="tf-who">{avatar_html(lg["rosters"][t["rid"]], 26)} <b>{t['team']}</b>
                 <span class="tf-rec">{record(lg["rosters"][t["rid"]])}</span></span>
                 <span class="tf-fair">{'Even' if abs(diff) < 3 else (f'{diff:+.0f}% value to you')}</span></div>
-              <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">⇄</div>
+              <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">for</div>
                 {side_html("You get", t["get"], t["vr"])}</div>
               <div class="tf-foot"><span class="tf-g me">Your lineup +{t['gm']:.0f} pts</span>
                 <span class="tf-g them">Their lineup +{t['gt']:.0f} pts</span></div>
@@ -1259,7 +1312,7 @@ def view_trade_finder():
 # ---------- tabs ----------
 
 def view_projections():
-    intro("Weekly projections", "Every player's projected points for the week, with a floor (a bad day) and a ceiling (a great day).", "Pick a week and positions, or search a name. Bars show each player's floor-to-ceiling range.")
+    intro("Weekly projections", "Projected points for every player. Floor is a bad day, ceiling is a good one.", "Pick a week and positions, or search a name. Bars show each player's floor-to-ceiling range.")
     c1, c2, c3 = st.columns([1, 2, 2])
     week = c1.selectbox("Week", sorted(proj["week"].unique()), key="pw")
     with c2:
@@ -1341,7 +1394,7 @@ def view_rankings():
         st.caption("Connect Sleeper in My Team to see who's available.")
 
 def view_team():
-    intro("My Team", "Your best lineup for the week, close calls, alerts, and the best pickups on your waiver wire.", "Import your roster from Sleeper or add players by hand. Bookmark the page and your team is saved.")
+    intro("My Team", "Your best lineup this week, close calls, and pickups worth making.", "Import your roster from Sleeper or add players by hand. Bookmark the page and your team is saved.")
     with st.container(border=True):
         st.markdown("**Import from Sleeper** · pulls your roster and your league's waiver wire")
         c1, c2 = st.columns([2, 3])
@@ -1497,7 +1550,7 @@ def view_players():
     render_profile(id_by_label[pick], "tab_pf")
 
 def view_startsit():
-    intro("Start / Sit", "Compare 2 to 4 players for a lineup decision.", "Pick the week and players. The highlighted card is the start. Close calls get a tiebreaker tip.")
+    intro("Start / Sit", "Compare 2 to 4 players for a lineup decision.", "Pick the week and players. The card marked Start is the pick. Close calls get a tiebreaker tip.")
     c1, c2 = st.columns([1, 3])
     ss_week = c1.selectbox("Week", sorted(proj["week"].unique()), key="ssw")
     init_from_url("ss_picks", "ss")
@@ -1551,7 +1604,7 @@ def view_startsit():
             st.caption("Share it by copying the page link.")
 
 def view_breakouts():
-    intro("Breakouts", "Players whose usage is climbing before their points catch up. Targets and carries predict future points better than last week's score.", "Look for the Usage spike and Due for points tags. Tap a row for the full profile.")
+    intro("Breakouts", "Players getting more targets and carries lately. Usage tends to show up in the box score a week or two later.", "Look for the Usage spike and Due for points tags. Tap a row for the full profile.")
     c1, c2 = st.columns([3, 2])
     with c1:
         bpos = position_filter("bo_pos")
@@ -1645,7 +1698,7 @@ def view_trades():
         st.info("Add at least one player to each side.")
 
 def view_accuracy():
-    intro("Accuracy", "How the projections have actually performed, scored against real results every week.", "Pick a week to see the best calls and the biggest misses.")
+    intro("Accuracy", "Projections compared with what actually happened, week by week.", "Pick a week to see the best calls and the biggest misses.")
     if acc.empty:
         st.info("No scored weeks yet. Accuracy appears here once games are played.")
     else:
@@ -1702,7 +1755,7 @@ def view_accuracy():
         st.plotly_chart(plot_style(fig, 420), width="stretch", key="acc_scatter")
 
 def view_model():
-    intro("How the model works", "The data, model, backtest results, and experiments behind every number in the app.", "Read top to bottom.")
+    intro("How the model works", "Where the data comes from, how the model works, and how it was tested.", "Read top to bottom.")
     st.markdown(
         "- **Data:** weekly stats for every QB, RB, WR, and TE since 2021 from "
         "[nflverse](https://github.com/nflverse), stored in a SQLite database, plus injury reports, snap counts, "
@@ -1756,9 +1809,7 @@ names = ["This Week", "My Team", "League", "Rankings", "Players", "Trades", "How
 st.session_state.setdefault("nav", default_tab)
 st.session_state["_nested"] = False
 with nav_box:
-    icons = {"This Week": ":material/today:", "My Team": ":material/groups:", "League": ":material/emoji_events:", "Rankings": ":material/leaderboard:",
-             "Players": ":material/person_search:", "Trades": ":material/swap_horiz:", "How It Works": ":material/insights:"}
-    section = st.radio("Menu", names, key="nav", label_visibility="collapsed", format_func=lambda n: f"{icons[n]} {n}")
+    section = st.radio("Menu", names, key="nav", label_visibility="collapsed")
 tabs = {n: st.container() if n == section else None for n in names}
 
 if section == "This Week":
