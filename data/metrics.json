@@ -1,0 +1,200 @@
+{
+  "backtest": {
+    "2025 season": [
+      {
+        "position": "ALL",
+        "games": 3129,
+        "model_mae": 5.78,
+        "baseline_mae": 5.98,
+        "range_hit_rate": 0.682,
+        "rank_corr": 0.473
+      },
+      {
+        "position": "QB",
+        "games": 581,
+        "model_mae": 6.61,
+        "baseline_mae": 6.9,
+        "range_hit_rate": 0.649,
+        "rank_corr": 0.399
+      },
+      {
+        "position": "RB",
+        "games": 798,
+        "model_mae": 5.88,
+        "baseline_mae": 6.05,
+        "range_hit_rate": 0.673,
+        "rank_corr": 0.47
+      },
+      {
+        "position": "WR",
+        "games": 1235,
+        "model_mae": 5.59,
+        "baseline_mae": 5.76,
+        "range_hit_rate": 0.715,
+        "rank_corr": 0.448
+      },
+      {
+        "position": "TE",
+        "games": 515,
+        "model_mae": 5.13,
+        "baseline_mae": 5.34,
+        "range_hit_rate": 0.654,
+        "rank_corr": 0.278
+      }
+    ],
+    "2026 season so far": [
+      {
+        "position": "ALL",
+        "games": 1069,
+        "model_mae": 5.86,
+        "baseline_mae": 6.11,
+        "range_hit_rate": 0.69,
+        "rank_corr": 0.497
+      },
+      {
+        "position": "QB",
+        "games": 192,
+        "model_mae": 6.32,
+        "baseline_mae": 6.42,
+        "range_hit_rate": 0.75,
+        "rank_corr": 0.392
+      },
+      {
+        "position": "RB",
+        "games": 270,
+        "model_mae": 5.85,
+        "baseline_mae": 6.11,
+        "range_hit_rate": 0.678,
+        "rank_corr": 0.523
+      },
+      {
+        "position": "WR",
+        "games": 413,
+        "model_mae": 5.81,
+        "baseline_mae": 6.08,
+        "range_hit_rate": 0.69,
+        "rank_corr": 0.456
+      },
+      {
+        "position": "TE",
+        "games": 194,
+        "model_mae": 5.5,
+        "baseline_mae": 5.85,
+        "range_hit_rate": 0.649,
+        "rank_corr": 0.288
+      }
+    ]
+  },
+  "importance": [
+    {
+      "feature": "ewm_ppr",
+      "importance": 1.228
+    },
+    {
+      "feature": "season_avg_ppr",
+      "importance": 0.204
+    },
+    {
+      "feature": "implied_total",
+      "importance": 0.078
+    },
+    {
+      "feature": "ewm_target_share",
+      "importance": 0.058
+    },
+    {
+      "feature": "ewm_attempts",
+      "importance": 0.056
+    },
+    {
+      "feature": "l3_opportunities",
+      "importance": 0.055
+    },
+    {
+      "feature": "ewm_opportunities",
+      "importance": 0.046
+    },
+    {
+      "feature": "ewm_carry_share",
+      "importance": 0.042
+    },
+    {
+      "feature": "ewm_passing_yards",
+      "importance": 0.038
+    },
+    {
+      "feature": "ewm_wopr",
+      "importance": 0.031
+    },
+    {
+      "feature": "l3_ppr",
+      "importance": 0.031
+    },
+    {
+      "feature": "def_factor",
+      "importance": 0.03
+    },
+    {
+      "feature": "ewm_total_tds",
+      "importance": 0.026
+    },
+    {
+      "feature": "ewm_targets",
+      "importance": 0.015
+    },
+    {
+      "feature": "ewm_rushing_yards",
+      "importance": 0.012
+    },
+    {
+      "feature": "games_played",
+      "importance": 0.011
+    },
+    {
+      "feature": "ewm_receptions",
+      "importance": 0.01
+    },
+    {
+      "feature": "spread",
+      "importance": 0.008
+    },
+    {
+      "feature": "pos_code",
+      "importance": 0.008
+    },
+    {
+      "feature": "ewm_air_yards_share",
+      "importance": 0.007
+    },
+    {
+      "feature": "ewm_receiving_air_yards",
+      "importance": 0.005
+    },
+    {
+      "feature": "ewm_carries",
+      "importance": 0.004
+    },
+    {
+      "feature": "ewm_receiving_yards",
+      "importance": 0.003
+    },
+    {
+      "feature": "home",
+      "importance": 0.003
+    }
+  ],
+  "train_rows": 30234,
+  "kdst": {
+    "K": {
+      "model_mae": 3.84,
+      "baseline_mae": 3.98,
+      "games": 536
+    },
+    "DST": {
+      "model_mae": 4.34,
+      "baseline_mae": 4.61,
+      "games": 544
+    }
+  },
+  "updated_at": "Oct 19, 2:33 PM ET"
+}
