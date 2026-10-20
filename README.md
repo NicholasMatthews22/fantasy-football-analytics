@@ -17,7 +17,7 @@ Seven sections, each with one job: **This Week** (projections and start/sit), **
 | **Players** | Profile for any player: season stats and positional rank, game log, usage share trend, and projections for every remaining week |
 | **My Team** | Import your roster from Sleeper (or add players by hand) and save it in the page link. Shows get your optimal lineup (QB, 2 RB, 2 WR, TE, FLEX), close calls, bye/injury/wind alerts, and the best players actually available on your league's waiver wire |
 | **Start / Sit** | Compare 2 to 4 players on side-by-side cards with team colors, matchup, injury status, and floor-to-ceiling range |
-| **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
+| **Breakouts** | RBs, WRs, and TEs whose targets, carries, and snap share are all rising, leaving out established starters and QBs |
 | **Power rankings + playoff odds** | Simulates the rest of your Sleeper league's season 5,000 times (real schedule, current records, every team's best projected lineup, your playoff format) for each team's playoff, bye, and title odds |
 | **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
 | **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades (players and dynasty draft picks) that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
@@ -58,7 +58,7 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 
 **Model.** Gradient-boosted trees (scikit-learn `HistGradientBoostingRegressor`). Floor and ceiling ranges are calibrated per position from how actual results spread around projections in a held-out season.
 
-**Breakout detector.** Fits an expected fantasy points (xFP) model from opportunity alone (targets, carries, air yards, pass attempts), then scores each player on how much their xFP rose over the last 3 games and how far their actual points trail their xFP.
+**Breakout detector.** Fits an expected fantasy points (xFP) model from opportunity alone (targets, carries, air yards), then flags running backs, receivers, and tight ends whose xFP and snap share both rose over their last 3 games. QBs are left out (their usage only jumps when a backup takes over), and so is anyone who finished top 36 at RB/WR or top 12 at TE in points per game in any of the last 3 seasons, since a star bouncing back from an injury isn't a breakout.
 
 **Trade analyzer.** Projects every remaining game using each player's current form against that week's opponent and betting line, then sums across the selected weeks.
 

@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ffa import fantasycalc, season_sim, sleeper, trade_history
+from ffa import breakouts as breakout_model, fantasycalc, season_sim, sleeper, trade_history
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
@@ -553,7 +553,19 @@ games_tbl["kick"] = games_tbl["gameday"].astype(str) + " " + (
     games_tbl["gametime"].astype(str) if "gametime" in games_tbl else "")
 teams = query("SELECT * FROM teams").set_index("team")
 proj = query("SELECT * FROM projections")
-breakouts = query("SELECT * FROM breakouts")
+
+
+@st.cache_data(show_spinner=False)
+def find_breakouts(db_version):
+    """Computed here (not just in the weekly pipeline) so rule changes show up right away."""
+    pw_all = query("SELECT * FROM player_weeks")
+    b = breakout_model.find_breakouts(pw_all, set(proj["player_id"]))[0]
+    cols = ["player_id", "name", "position", "team", "headshot_url", "xfp_before", "xfp_last3", "ppr_last3",
+            "snap_before", "snap_last3", "usage_change", "snap_change", "points_gap", "breakout_score"]
+    return b if len(b) else pd.DataFrame(columns=cols)
+
+
+breakouts = find_breakouts(DB_VERSION)
 usage = query("SELECT * FROM usage_weekly")
 weather = query("SELECT * FROM weather")
 id_map = query("SELECT * FROM id_map")
@@ -966,7 +978,8 @@ def render_home_summary():
         u0, u1 = use[bo["player_id"]]
         notes.append((bo["headshot_url"], "Breakout to watch",
                       f"<b>{bo['name']}</b> ({bo['position']}) went from {u0:.1f} to {u1:.1f} "
-                      f"{usage_words(bo['position'])} per game over his last 3."))
+                      f"{usage_words(bo['position'])} per game and from {bo['snap_before']:.0%} to "
+                      f"{bo['snap_last3']:.0%} of snaps over his last 3."))
     hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
     notes.append((hi["logo"], "Highest team total",
                   f"<b>{team_attr(hi['team'], 'team_name', hi['team'])}</b> {hi['matchup']}, "
@@ -2035,7 +2048,9 @@ def view_startsit():
             st.caption("Share it by copying the page link.")
 
 def view_breakouts():
-    intro("Breakouts", "Players getting more targets and carries lately. Usage tends to show up in the box score a week or two later.", "Look for the Usage spike and Due for points tags. Tap a row for the full profile.")
+    intro("Breakouts", "Running backs, receivers, and tight ends whose role is growing: more targets and carries and more snaps "
+          "over their last 3 games. Established starters and QBs are left out.",
+          "Usage tends to show up in the box score a week or two later. Tap a row for the full profile.")
     c1, c2 = st.columns([3, 2])
     with c1:
         bpos = position_filter("bo_pos")
@@ -2045,17 +2060,19 @@ def view_breakouts():
     b = b.head(25).copy()
     use = breakout_usage(DB_VERSION)
     b["usage"] = [f"{use[p_][0]:.1f} → {use[p_][1]:.1f}" if p_ in use else "" for p_ in b["player_id"]]
+    b["snaps"] = [f"{x0:.0%} → {x1:.0%}" for x0, x1 in zip(b["snap_before"], b["snap_last3"])]
     b["signal"] = b.apply(lambda r: " · ".join(
-        s for s, ok in [("Usage spike", r["usage_change"] >= 3), ("Due for points", r["points_gap"] >= 3)] if ok), axis=1)
+        s for s, ok in [("Usage spike", r["usage_change"] >= 3), ("Snaps up", r["snap_change"] >= 0.2),
+                         ("Due for points", r["points_gap"] >= 3)] if ok), axis=1)
     sel = st.dataframe(
-        b[["headshot_url", "name", "position", "team", "usage", "xfp_before", "xfp_last3", "ppr_last3",
+        b[["headshot_url", "name", "position", "team", "usage", "snaps", "xfp_before", "xfp_last3", "ppr_last3",
            "signal", "breakout_score"]].style.map(lambda p: POS_STYLE.get(p, ""), subset=["position"]),
         hide_index=True, width="stretch", height=480, on_select="rerun", selection_mode="single-row", key="bo_table",
         column_config={
             "headshot_url": st.column_config.ImageColumn("", width="small"),
             "name": "Player", "position": "Pos", "team": "Team",
-            "usage": st.column_config.TextColumn("Usage / game", help="Earlier this season → last 3 games. "
-                                                 "QBs: pass attempts + runs. Others: targets + carries."),
+            "usage": st.column_config.TextColumn("Touches / game", help="Targets + carries: earlier this season → last 3 games."),
+            "snaps": st.column_config.TextColumn("Snap share", help="Share of the team's offensive snaps: earlier this season → last 3 games."),
             "xfp_before": st.column_config.NumberColumn("xFP before", format="%.1f"),
             "xfp_last3": st.column_config.NumberColumn("xFP last 3", format="%.1f"),
             "ppr_last3": st.column_config.NumberColumn("Actual last 3", format="%.1f"),
