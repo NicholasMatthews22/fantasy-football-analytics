@@ -661,16 +661,6 @@ def week_row(pid, week):
     return r.iloc[0] if len(r) else None
 
 
-def load_example_team():
-    """A realistic mid-draft roster: one strong starter at each spot plus depth, not all stars."""
-    picks_by_pos = {"QB": [3, 14], "RB": [2, 9, 18, 27, 35], "WR": [4, 11, 20, 30, 38], "TE": [5, 15]}
-    team = []
-    for pos_, ranks in picks_by_pos.items():
-        pool = players[players["position"] == pos_]["label"].tolist()
-        team += [pool[r - 1] for r in ranks if r <= len(pool)]
-    st.session_state["team"] = team
-
-
 def init_from_url(key, param):
     """Seed a multiselect from the page URL the first time it renders (for shareable links)."""
     if key not in st.session_state:
@@ -1413,9 +1403,8 @@ def view_trade_finder():
         return
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
-    c1, c2, c3 = st.columns([3, 1.3, 1.3])
-    w0, w1 = c1.slider("Weeks to count for lineup gains", min_value=weeks[0], max_value=weeks[-1],
-                       value=(weeks[0], end_default), key="tf_w")
+    w0, w1 = weeks[0], end_default          # always this week through the end of the fantasy regular season
+    c2, c3 = st.columns(2)
     kinds = c2.selectbox("Trade types", ["1-for-1 and 2-for-1", "1-for-1 only"], key="tf_kinds")
     style = "Win now"
     if lg.get("dynasty") and lg.get("picks"):
@@ -1801,11 +1790,11 @@ def view_projections():
             st.rerun()
 
 def view_rankings():
-    intro("Rest-of-season rankings", "Every player ranked by value: projected points above a replacement-level starter at his position.", "Set your league size and the weeks you care about. Connect Sleeper in My Team to see who is available.")
+    intro("Rest-of-season rankings", "Every player ranked by value: projected points above a replacement-level starter at his position.", "Counts every game from this week through Week 17. Connect Sleeper in My Team to see who is available.")
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
-    c1, c2, c3 = st.columns([3, 1, 2])
-    rw0, rw1 = c1.slider("Weeks", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default), key="rk_w")
+    rw0, rw1 = weeks[0], end_default
+    c2, c3 = st.columns([1, 2])
     sizes = [8, 10, 12, 14]
     default_n = league()["teams"] if league() and league()["teams"] in sizes else 12
     rk_n = c2.selectbox("League size", sizes, index=sizes.index(default_n), key="rk_n")
@@ -1840,7 +1829,7 @@ def view_rankings():
         st.caption("Connect Sleeper in My Team to see who's available.")
 
 def view_team():
-    intro("My Team", "Your best lineup this week, close calls, and pickups worth making.", "Import your roster from Sleeper or add players by hand. Bookmark the page and your team is saved.")
+    intro("My Team", "Your best lineup this week, close calls, and pickups worth making.", "Import your roster from Sleeper. Bookmark the page and your league reconnects automatically.")
     with st.container(border=True):
         st.markdown("**Import from Sleeper** · pulls your roster and your league's waiver wire")
         c1, c2 = st.columns([2, 3])
@@ -1875,11 +1864,7 @@ def view_team():
             st.success(f"Connected to **{lg['name']}** ({lg['teams']} teams).{extra}")
             st.caption("Using your league's scoring and lineup slots.")
 
-    init_from_url("team", "team")
-    c1, c2 = st.columns([4, 1])
-    roster = c1.multiselect("Your roster", labels, key="team", placeholder="Add your players...")
-    c2.button("Load example team", width="stretch", on_click=load_example_team)
-    sync_url("team", roster)
+    roster = [l for l in st.session_state.get("team", []) if l in id_by_label]
     t_week = st.selectbox("Week", sorted(proj["week"].unique()), key="team_week")
 
     if league():
@@ -1890,7 +1875,7 @@ def view_team():
             return view_matchup(t_week)
 
     if not roster:
-        st.info("Import from Sleeper, add players by hand, or load the example team to see your optimal lineup.")
+        st.info("Enter your Sleeper username and click Import roster to see your optimal lineup.")
     else:
         ids = [id_by_label[l] for l in roster]
         avail = proj[proj["player_id"].isin(ids) & (proj["week"] == t_week)].copy()
@@ -2095,8 +2080,8 @@ def view_trades():
           "Add players or picks to each side. Copy the page link to share the exact trade.")
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
-    c0, c00 = st.columns([3, 1])
-    w0, w1 = c0.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default))
+    w0, w1 = weeks[0], end_default
+    c00, _ = st.columns([1, 3])
     sizes = [8, 10, 12, 14]
     default_n = lg["teams"] if lg and lg["teams"] in sizes else 12
     teams_n = c00.selectbox("League size", sizes, index=sizes.index(default_n), key="league_size")
