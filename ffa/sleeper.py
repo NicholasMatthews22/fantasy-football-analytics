@@ -79,3 +79,28 @@ def avatar_url(user):
     if str(meta.get("avatar", "")).startswith("http"):
         return meta["avatar"]
     return f"https://sleepercdn.com/avatars/thumbs/{user['avatar']}" if user.get("avatar") else None
+
+
+def traded_picks(league_id):
+    """Every draft pick that has changed hands: season, round, roster_id (original team), owner_id (current team)."""
+    return _get(f"/league/{league_id}/traded_picks") or []
+
+
+def pick_ownership(rosters, traded, seasons, rounds):
+    """{current roster_id: [(season, round, original roster_id), ...]} starting from every team owning its own picks."""
+    owner = {}
+    for r in rosters:
+        rid = r.get("roster_id")
+        for s in seasons:
+            for rd in range(1, rounds + 1):
+                owner[(s, rd, rid)] = rid
+    for t in traded:
+        key = (int(t.get("season", 0)), int(t.get("round", 0)), t.get("roster_id"))
+        if key in owner and t.get("owner_id") is not None:
+            owner[key] = t["owner_id"]
+    out = {}
+    for (s, rd, orig), cur in owner.items():
+        out.setdefault(cur, []).append((s, rd, orig))
+    for v in out.values():
+        v.sort()
+    return out

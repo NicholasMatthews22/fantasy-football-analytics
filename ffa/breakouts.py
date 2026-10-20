@@ -44,7 +44,9 @@ def find_breakouts(pw, active_ids, min_games=4):
             "headshot_url": r["headshot_url"], "games": len(g),
             "xfp_last3": last3["xfp"].mean(), "xfp_before": prior["xfp"].mean(),
             "ppr_last3": last3["ppr"].mean(),
-            "opps_last3": last3["opportunities"].mean(), "opps_before": prior["opportunities"].mean(),
+            # usage = pass attempts + runs for QBs, targets + carries for everyone else
+            "opps_last3": (last3["attempts"] + last3["carries"]).mean() if r["position"] == "QB" else last3["opportunities"].mean(),
+            "opps_before": (prior["attempts"] + prior["carries"]).mean() if r["position"] == "QB" else prior["opportunities"].mean(),
             "tgt_share_last3": last3["target_share"].mean(), "tgt_share_before": prior["target_share"].mean(),
             "carry_share_last3": last3["carry_share"].mean(), "carry_share_before": prior["carry_share"].mean(),
         }

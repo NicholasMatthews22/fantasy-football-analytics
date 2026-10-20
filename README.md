@@ -20,7 +20,7 @@ Seven sections, each with one job: **This Week** (projections and start/sit), **
 | **Breakouts** | Ranks players whose usage (targets + carries) is rising, or whose points haven't caught up to their usage yet |
 | **Power rankings + playoff odds** | Simulates the rest of your Sleeper league's season 5,000 times (real schedule, current records, every team's best projected lineup, your playoff format) for each team's playoff, bye, and title odds |
 | **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
-| **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
+| **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades (players and dynasty draft picks) that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
 | **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
 | **Accuracy** | Projections are saved before kickoff every week and scored against real results: weekly average miss vs. baseline, best calls, biggest misses |
 | **Model** | Backtest results, what drives the projections, and feature experiments that didn't make the cut |
@@ -62,6 +62,8 @@ nflverse (GitHub)  ->  SQLite database  ->  feature engineering  ->  model  ->  
 **Trade analyzer.** Projects every remaining game using each player's current form against that week's opponent and betting line, then sums across the selected weeks.
 
 **Sleeper import.** Uses Sleeper's free public API (no login): username, then league, then roster. Sleeper player IDs are mapped to NFL IDs with the DynastyProcess ID database. Every rostered player in the league is marked taken, so waiver suggestions only show real free agents.
+
+**Draft picks (dynasty).** Pick ownership comes from Sleeper, including traded picks. Values come from FantasyCalc's dynasty market; next year's picks are valued as early, mid, or late from the original team's current record, and rounds FantasyCalc doesn't list are extended from the drop-off between earlier rounds.
 
 **Kickers and defenses.** Scored with Sleeper defaults. A small regression on recent form plus Vegas context (team implied total for kickers, opponent implied total for defenses) beat the recent-average baseline in a 2025 backtest: kickers 3.84 vs 3.98 average miss, defenses 4.34 vs 4.61.
 

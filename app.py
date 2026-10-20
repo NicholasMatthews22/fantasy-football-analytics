@@ -279,6 +279,9 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .tf-txt { min-width: 0; }
 .tf-txt .nm { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tf-txt .mt { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center; text-align: center; font-size: .62rem;
+  font-weight: 800; line-height: 1.1; color: #e8ebf2; flex: none; }
 .tf-arrow { text-align: center; color: var(--muted); font-size: 1.1rem; }
 
 /* avatars */
@@ -338,6 +341,9 @@ span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #e8ebf2 !im
 .tf-txt { min-width: 0; }
 .tf-txt .nm { font-weight: 700; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tf-txt .mt { font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pk { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center; text-align: center; font-size: .62rem;
+  font-weight: 800; line-height: 1.1; color: #e8ebf2; flex: none; }
 .tf-arrow { text-align: center; color: var(--muted); font-size: 1rem; padding-top: 26px; }
 .tf-foot { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .tf-g { display: inline-block; font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; }
@@ -363,6 +369,9 @@ h2, h3, .ph h2 { letter-spacing: -.2px !important; }
 .range-dot { border-width: 2px; }
 .lu-row.empty { opacity: 1; color: var(--muted); }
 .tf-lbl, .pr-head { text-transform: none; letter-spacing: 0; font-size: .76rem; }
+.pk { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center; text-align: center; font-size: .62rem;
+  font-weight: 800; line-height: 1.1; color: #e8ebf2; flex: none; }
 .tf-arrow { font-size: .75rem; padding-top: 30px; }
 .pr-row.mine { border-color: var(--line); box-shadow: none; background: #222a3c; }
 .pr-row.mine .pr-name::after { content: "You"; margin-left: 8px; font-size: .68rem; font-weight: 700; padding: 1px 6px;
@@ -403,6 +412,48 @@ section[data-testid="stSidebar"] [data-testid="stRadioOption"] p { color: #c3c9d
 .ph.sub { margin: 8px 0 12px; }
 [data-testid="stMetric"] { border-radius: 12px; padding: 12px 16px; }
 
+/* home: top projected tiles */
+.tp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+.tp { position: relative; overflow: hidden; border-radius: 12px; padding: 12px 14px; min-width: 0;
+  background: color-mix(in srgb, var(--tc) 38%, #151a25); display: flex; flex-direction: column; gap: 10px; }
+.tp-logo { position: absolute; right: -18px; bottom: -18px; width: 110px; height: 110px; opacity: .13; pointer-events: none; }
+.tp-top { display: flex; justify-content: space-between; gap: 8px; font-size: .76rem; font-weight: 600;
+  color: rgba(255,255,255,.78); }
+.tp-mid { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tp-hs { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; object-position: top;
+  background: rgba(0,0,0,.25); flex: none; }
+.tp-name { font-weight: 800; font-size: 1.1rem; line-height: 1.2; color: #fff; min-width: 0; }
+.tp-pts { font-weight: 800; font-size: 2rem; color: #fff; line-height: 1; font-stretch: 88%;
+  font-variant-numeric: tabular-nums; }
+.tp-pts small { font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.72); margin-left: 6px; }
+
+/* home: slate + notes */
+.home2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin: 0 0 24px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px 8px; }
+.panel-h { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; padding: 12px 0 10px;
+  border-bottom: 1px solid var(--line); }
+.panel-h span { font-weight: 500; font-size: .78rem; color: var(--muted); }
+.gm { display: grid; grid-template-columns: 34px minmax(0, 1fr) 16px minmax(0, 1fr) 76px 70px; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .86rem; }
+.gm:last-child { border-bottom: 0; }
+.gm.done { opacity: .55; }
+.gm-day { color: var(--muted); font-size: .76rem; font-weight: 600; }
+.gm-t { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; }
+.gm-t img { width: 22px; height: 22px; }
+.gm-t b { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: #e8ebf2; }
+.gm-at { color: var(--muted); font-size: .75rem; text-align: center; }
+.gm-line { color: var(--muted); font-size: .78rem; text-align: right; white-space: nowrap; }
+.gm-tot { text-align: right; font-size: .78rem; font-weight: 700; color: #c3c9d6; font-variant-numeric: tabular-nums; }
+.gm-tot.hot { color: #ffb35c; }
+.nt-row2 { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0;
+  border-bottom: 1px solid var(--line); }
+.nt-row2:last-child { border-bottom: 0; }
+.nt-row2 img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface2); }
+.nt-dot { width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); display: block; }
+.nt-row2 .nt-k { color: var(--muted); font-size: .78rem; font-weight: 600; margin-bottom: 2px; }
+.nt-row2 .nt-v { color: #d4d9e4; font-size: .9rem; line-height: 1.45; }
+.nt-row2 .nt-v b { color: #fff; }
+
 /* phones */
 @media (max-width: 900px) {
   .gl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -434,6 +485,15 @@ section[data-testid="stSidebar"] [data-testid="stRadioOption"] p { color: #c3c9d
   .pc-range { display: none; }
   .pc-pts { font-size: 1.2rem; }
   .home { grid-template-columns: 1fr; gap: 16px; }
+  .tp-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tp { padding: 10px 12px; gap: 8px; }
+  .tp-top span:last-child { display: none; }
+  .tp-hs { width: 44px; height: 44px; }
+  .tp-name { font-size: .95rem; }
+  .tp-pts { font-size: 1.5rem; }
+  .home2 { grid-template-columns: 1fr; }
+  .gm { grid-template-columns: 30px minmax(0, 1fr) 12px minmax(0, 1fr) 58px; font-size: .8rem; }
+  .gm-tot { display: none; }
   .nt-row { grid-template-columns: 1fr; gap: 2px; }
   .tf-sides { grid-template-columns: 1fr; }
   .pr-head { display: none; }
@@ -447,7 +507,10 @@ section[data-testid="stSidebar"] [data-testid="stRadioOption"] p { color: #c3c9d
   .sb-mid { display: none; }
   .sb-pts { font-size: 1.5rem; }
   .sb-team .av { width: 36px !important; height: 36px !important; }
-  .tf-arrow { padding: 0; transform: rotate(90deg); }
+  .pk { width: 36px; height: 36px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center; text-align: center; font-size: .62rem;
+  font-weight: 800; line-height: 1.1; color: #e8ebf2; flex: none; }
+.tf-arrow { padding: 0; transform: rotate(90deg); }
   .tf-card { min-height: 0; }
   .lu-row .logo { display: none; }
   .lu-row .slot { width: 40px; }
@@ -485,6 +548,9 @@ def query(sql):
 
 
 DB_VERSION = DB_PATH.stat().st_mtime
+games_tbl = query("SELECT * FROM games")
+games_tbl["kick"] = games_tbl["gameday"].astype(str) + " " + (
+    games_tbl["gametime"].astype(str) if "gametime" in games_tbl else "")
 teams = query("SELECT * FROM teams").set_index("team")
 proj = query("SELECT * FROM projections")
 breakouts = query("SELECT * FROM breakouts")
@@ -708,12 +774,58 @@ def connect_league(league, user_id):
             "ids": [g for g in (to_gsis(p) for p in (r.get("players") or [])) if g]} for r in rosters},
         "playoff_teams": int(lsettings.get("playoff_teams") or 6),
         "playoff_start": int(lsettings.get("playoff_week_start") or 15),
+        "pick_seasons": PICK_SEASONS, "pick_rounds": int(lsettings.get("draft_rounds") or 5),
     }
+    if st.session_state["league_info"]["dynasty"]:
+        try:
+            traded = sleeper.traded_picks(league["league_id"])
+        except sleeper.SleeperError:
+            traded = []
+        st.session_state["league_info"]["picks"] = sleeper.pick_ownership(
+            rosters, traded, PICK_SEASONS, st.session_state["league_info"]["pick_rounds"])
     st.session_state["scoring"] = "My league"
 
 
 def league():
     return st.session_state.get("league_info")
+
+
+PICK_SEASONS = [season + 1, season + 2, season + 3]
+ORD = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 7: "7th"}
+
+
+def pick_id(s_, rd, orig):
+    return f"PICK_{s_}_{rd}_{orig}"
+
+
+def parse_pick(pid):
+    _, s_, rd, orig = pid.split("_")
+    return int(s_), int(rd), int(orig)
+
+
+def pick_label(pid):
+    s_, rd, orig = parse_pick(pid)
+    owner = league()["rosters"].get(orig, {}).get("owner", f"Team {orig}") if league() else f"Team {orig}"
+    return f"{s_} {ORD.get(rd, f'{rd}th')} ({owner})"
+
+
+def league_pick_ids():
+    lg = league()
+    if not lg or not lg.get("picks"):
+        return []
+    return [pick_id(*p_) for rid in lg["picks"] for p_ in lg["picks"][rid]]
+
+
+def pick_tier(pid):
+    """Next year's picks get an Early/Mid/Late slot from the original team's standing (worst teams pick early)."""
+    s_, rd, orig = parse_pick(pid)
+    lg = league()
+    if s_ != PICK_SEASONS[0] or not lg:
+        return None
+    order = sorted(lg["rosters"], key=lambda r: (lg["rosters"][r]["wins"], lg["rosters"][r]["pf"]))
+    n = len(order)
+    pos_ = order.index(orig) if orig in order else n // 2
+    return "Early" if pos_ < n / 3 else ("Mid" if pos_ < 2 * n / 3 else "Late")
 
 
 # reconnect automatically when the page is opened from a saved link
@@ -726,6 +838,14 @@ if league() is None and st.query_params.get("sleeper") and st.query_params.get("
     except Exception:
         pass
 
+
+# draft picks become tradeable "assets" once a dynasty league is connected
+asset_labels = list(labels)
+for _pid in league_pick_ids():
+    _lab = pick_label(_pid)
+    id_by_label[_lab] = _pid
+    label_by_id[_pid] = _lab
+    asset_labels.append(_lab)
 
 # ---------- scoring ----------
 rates = query("SELECT * FROM player_rates").set_index("player_id")
@@ -774,37 +894,107 @@ def section_header(title, sub=""):
          f'<div class="meta">{meta}</div></div>')
 
 
+def tile_color(team):
+    """Team color for a tile background, falling back to the secondary color when the main one is near-black."""
+    c = team_attr(team, "team_color", "#3a4256")
+    try:
+        r_, g_, b_ = (int(c.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        if 0.2126 * r_ + 0.7152 * g_ + 0.0722 * b_ < 20:
+            return team_attr(team, "team_color2", "#3a4256")
+    except ValueError:
+        pass
+    return c
+
+
+def usage_words(pos_):
+    return "pass attempts and runs" if pos_ == "QB" else "targets and carries"
+
+
+@st.cache_data
+def breakout_usage(db_version):
+    """Usage per game earlier this season vs. the last 3 games. QBs: attempts + runs. Others: targets + carries."""
+    g = games_cur.sort_values(["player_id", "week"]).copy()
+    g["use"] = np.where(g["position"] == "QB", g["attempts"] + g["carries"], g["targets"] + g["carries"])
+    rows = {}
+    for pid, x in g.groupby("player_id"):
+        if len(x) >= 4:
+            rows[pid] = (x["use"].iloc[:-3].mean(), x["use"].tail(3).mean())
+    return rows
+
+
 def render_home_summary():
     wk = proj[(proj["week"] == next_week) & ~proj["status"].isin(["Out", "Final"])]
-    top = []
+
+    # 1) top projected player at each position: big tiles tinted in the team's color
+    tiles = []
     for pos_ in ["QB", "RB", "WR", "TE"]:
         r = wk[wk["position"] == pos_].nlargest(1, "proj").iloc[0]
-        top.append(f"""<div class="hl-row"><span class="hl-pos">{pos_}</span><img class="hs" src="{r['headshot_url']}">
-          <span class="hl-main"><b>{r['name']}</b> {badge(r['status'])}<small>{r['team']} {r['matchup']}</small></span>
-          <span class="hl-pts">{r['proj']:.1f}</span></div>""")
+        tiles.append(f"""<div class="tp" style="--tc:{tile_color(r['team'])}">
+          <img class="tp-logo" src="{r['logo']}">
+          <div class="tp-top"><span>{pos_}1 this week</span><span>{r['team']} {r['matchup']}</span></div>
+          <div class="tp-mid"><img class="tp-hs" src="{r['headshot_url']}"><div class="tp-name">{r['name']} {badge(r['status'])}</div></div>
+          <div class="tp-pts">{r['proj']:.1f}<small>projected</small></div></div>""")
 
-    smash = wk[wk["proj"] >= 12].nlargest(1, "def_factor").iloc[0]
-    bo = breakouts.iloc[0]
+    # 2) the slate: every game this week with Vegas totals
+    g = proj[proj["week"] == next_week].drop_duplicates(["game_id", "team"])
+    games_wk = []
+    for gid, x in g.groupby("game_id"):
+        if len(x) < 2:
+            continue
+        home = x[x["home"] == 1].iloc[0] if (x["home"] == 1).any() else x.iloc[1]
+        away = x[x["home"] != 1].iloc[0] if (x["home"] != 1).any() else x.iloc[0]
+        done = (x["status"] == "Final").any()
+        games_wk.append((home["implied_total"] + away["implied_total"], gid, away, home, done))
+    kick = {gid: k for gid, k in zip(games_tbl["game_id"], games_tbl["kick"])}
+    games_wk.sort(key=lambda t: (t[4], kick.get(t[1], ""), t[1]))
+    hi_total = max((t[0] for t in games_wk if not t[4]), default=0)
+    slate = []
+    for total, gid, away, home, done in games_wk:
+        day = pd.to_datetime(home["gameday"]).strftime("%a")
+        fav = away if away["implied_total"] > home["implied_total"] else home
+        spread = abs(away["implied_total"] - home["implied_total"])
+        line = "Final" if done else (f"{fav['team']} −{spread:.1f}" if spread >= 0.5 else "Pick'em")
+        hot = (not done) and total == hi_total
+        slate.append(f"""<div class="gm {'done' if done else ''}"><span class="gm-day">{day}</span>
+          <span class="gm-t"><img src="{away['logo']}">{away['team']}<b>{away['implied_total']:.1f}</b></span>
+          <span class="gm-at">@</span>
+          <span class="gm-t"><img src="{home['logo']}">{home['team']}<b>{home['implied_total']:.1f}</b></span>
+          <span class="gm-line">{line}</span>
+          <span class="gm-tot {'hot' if hot else ''}">{'' if done else f'O/U {total:.1f}'}</span></div>""")
+
+    # 3) worth knowing, each with a face or logo
+    picks = wk[wk["proj"] >= 12]
+    smash = picks.nlargest(1, "def_factor").iloc[0]
+    use = breakout_usage(DB_VERSION)
+    starters = set(wk.loc[wk["proj"] >= 8, "player_id"])
+    bo_pool = breakouts[breakouts["player_id"].isin(starters) & breakouts["player_id"].isin(use)]
+    notes = [(smash["headshot_url"], "Best matchup",
+              f"<b>{smash['name']}</b> {smash['matchup']}. That defense allows "
+              f"{(smash['def_factor'] - 1) * 100:.0f}% more points than average to {smash['position']}s.")]
+    if len(bo_pool):
+        bo = bo_pool.iloc[0]
+        u0, u1 = use[bo["player_id"]]
+        notes.append((bo["headshot_url"], "Breakout to watch",
+                      f"<b>{bo['name']}</b> ({bo['position']}) went from {u0:.1f} to {u1:.1f} "
+                      f"{usage_words(bo['position'])} per game over his last 3."))
     hi = wk.drop_duplicates("team").nlargest(1, "implied_total").iloc[0]
-    notes = [
-        ("Best matchup", f"<b>{smash['name']}</b> {smash['matchup']}. That defense allows "
-                         f"{(smash['def_factor'] - 1) * 100:.0f}% more points than average to {smash['position']}s."),
-        ("Breakout to watch", f"<b>{bo['name']}</b> went from {bo['opps_before']:.1f} to {bo['opps_last3']:.1f} "
-                              "targets and carries per game over his last 3."),
-        ("Highest team total", f"<b>{team_attr(hi['team'], 'team_name', hi['team'])}</b> {hi['matchup']}, "
-                               f"{hi['implied_total']:.1f} points expected by Vegas."),
-    ]
+    notes.append((hi["logo"], "Highest team total",
+                  f"<b>{team_attr(hi['team'], 'team_name', hi['team'])}</b> {hi['matchup']}, "
+                  f"{hi['implied_total']:.1f} points expected by Vegas."))
     if not injury_posted:
-        notes.append(("Injuries", f"The Week {next_week} report isn't final. Statuses update Saturday and Sunday mornings."))
+        notes.append((None, "Injuries", f"The Week {next_week} report isn't final. Statuses update Saturday and Sunday mornings."))
     windy = wk[wk["windy"]].drop_duplicates("game_id")
     if len(windy):
         games_txt = ", ".join(f"{r['team']} {r['matchup']} ({r['wind']:.0f} mph)" for _, r in windy.iterrows())
-        notes.append(("Wind", f"{games_txt}. QBs in 15+ mph wind have scored about 3 points under projection."))
-    note_rows = "".join(f'<div class="nt-row"><span class="nt-k">{k}</span><span class="nt-v">{v}</span></div>'
-                        for k, v in notes)
-    html(f"""<div class="home">
-      <div class="home-col"><div class="home-h">Top projected</div>{"".join(top)}</div>
-      <div class="home-col"><div class="home-h">Worth knowing</div>{note_rows}</div>
+        notes.append((None, "Wind", f"{games_txt}. QBs in 15+ mph wind have scored about 3 points under projection."))
+    note_rows = "".join(
+        f'<div class="nt-row2">{f"<img src={img}>" if img else "<span class=nt-dot></span>"}'
+        f'<div><div class="nt-k">{k}</div><div class="nt-v">{v}</div></div></div>' for img, k, v in notes)
+
+    html(f"""<div class="tp-grid">{"".join(tiles)}</div>
+    <div class="home2">
+      <div class="panel"><div class="panel-h">Week {next_week} slate<span>Vegas implied points</span></div>{"".join(slate)}</div>
+      <div class="panel"><div class="panel-h">Worth knowing</div>{note_rows}</div>
     </div>""")
 
 
@@ -1086,20 +1276,35 @@ def view_matchup(week):
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def market_rows(dynasty, superflex, teams, ppr):
+    try:
+        return fantasycalc.fetch_rows(dynasty, superflex, teams, ppr)
+    except Exception:
+        return []
+
+
 def market_values(dynasty, superflex, teams, ppr):
     """FantasyCalc trade values keyed by our player IDs. Empty dict if the service can't be reached."""
-    try:
-        raw = fantasycalc.fetch_values(dynasty, superflex, teams, ppr)
-    except Exception:
-        return {}
+    raw = fantasycalc.player_values(market_rows(dynasty, superflex, teams, ppr))
     return {g: v for g, v in ((to_gsis(sid), val) for sid, val in raw.items()) if g}
 
 
 def league_market_values():
+    """Player values plus every draft pick in the league (dynasty only), keyed by our IDs."""
     lg = league()
     if not lg:
         return {}
-    return market_values(lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+    args = (lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+    vals = dict(market_values(*args))
+    if lg.get("dynasty") and lg.get("picks"):
+        pv = fantasycalc.pick_values(market_rows(*args), lg["pick_seasons"], lg["pick_rounds"])
+        for pid in league_pick_ids():
+            s_, rd, _ = parse_pick(pid)
+            v = pv.get((s_, rd, pick_tier(pid))) or pv.get((s_, rd, None))
+            if v:
+                vals[pid] = float(v)
+    return vals
 
 
 @st.cache_data(ttl=900, show_spinner=False)
@@ -1213,6 +1418,12 @@ def view_trade_finder():
     w0, w1 = c1.slider("Weeks to count for lineup gains", min_value=weeks[0], max_value=weeks[-1],
                        value=(weeks[0], end_default), key="tf_w")
     kinds = c2.selectbox("Trade types", ["1-for-1 and 2-for-1", "1-for-1 only"], key="tf_kinds")
+    style = "Win now"
+    if lg.get("dynasty") and lg.get("picks"):
+        style = st.segmented_control("Your goal", ["Win now", "Build for the future"], key="tf_style",
+                                     default="Win now", required=True,
+                                     help="Win now: improve your lineup, paying with players or picks. "
+                                          "Build for the future: trade lineup points to contenders for picks.")
     tol = c3.selectbox("Fairness", ["Strict (±8%)", "Normal (±15%)", "Loose (±25%)"], index=1, key="tf_tol")
     tol = {"Strict (±8%)": .08, "Normal (±15%)": .15, "Loose (±25%)": .25}[tol]
 
@@ -1233,8 +1444,13 @@ def view_trade_finder():
     def tradeable(ids):
         return [i for i in ids if i in ros.index and value(i) > 0 and ros.at[i, "position"] not in ("K", "DST")]
 
+    def picks_of(rid):
+        if not (market and lg.get("picks")):
+            return []
+        return [p_ for p_ in (pick_id(*x) for x in lg["picks"].get(rid, [])) if value(p_) >= 400]
+
     mine_ids = lg["rosters"].get(lg["my_roster_id"], {}).get("ids", [])
-    mine, my_trade = plist(mine_ids), tradeable(mine_ids)
+    mine, my_trade = plist(mine_ids), tradeable(mine_ids) + picks_of(lg["my_roster_id"])
     base_me = lineup_total(mine, slots)
     ideas = []
 
@@ -1246,7 +1462,15 @@ def view_trade_finder():
         th_after = [x for x in theirs if x[0] not in get] + [x for x in mine if x[0] in give]
         gm = lineup_total(me_after, slots) - base_me
         gt = lineup_total(th_after, slots) - base_them
-        if gm > 3 and gt > 0:
+        gets_picks = any(p_.startswith("PICK_") for p_ in get)
+        gives_picks = any(p_.startswith("PICK_") for p_ in give)
+        if style == "Win now":
+            pick_paid = sum(value(p_) for p_ in give if p_.startswith("PICK_"))
+            # they may give up a little lineup for a real pick (2nd round or better), like a rebuilding team would
+            ok = gm > 3 and (gt > 0 or (pick_paid >= 1000 and gt > -15))
+        else:
+            ok = gets_picks and gt > 3                        # you sell lineup points to a contender for picks
+        if ok:
             ideas.append({"team": owner, "rid": cur_rid[0], "give": give, "get": get, "gm": gm, "gt": gt, "vg": vg, "vr": vr})
 
     two_for_one = kinds.startswith("1-for-1 and")
@@ -1255,7 +1479,7 @@ def view_trade_finder():
         if rid == lg["my_roster_id"]:
             continue
         cur_rid[0] = rid
-        theirs, their_trade = plist(r["ids"]), tradeable(r["ids"])
+        theirs, their_trade = plist(r["ids"]), tradeable(r["ids"]) + picks_of(rid)
         base_them = lineup_total(theirs, slots)
         for a in my_trade:
             for b in their_trade:
@@ -1275,7 +1499,8 @@ def view_trade_finder():
         return
     # best combined lineup gain first; keep the list varied (each player at most twice)
     picked, seen = [], {}
-    for t in sorted(ideas, key=lambda x: -(x["gm"] + x["gt"])):
+    for t in sorted(ideas, key=lambda x: -(x["gm"] + x["gt"]) if style == "Win now"
+                    else -(x["vr"] - x["vg"] + x["gt"] * 10)):
         if all(seen.get(p_, 0) < 2 for p_ in t["give"] + t["get"]):
             picked.append(t)
             for p_ in t["give"] + t["get"]:
@@ -1287,11 +1512,20 @@ def view_trade_finder():
                 f'rest-of-season starter points (Weeks {w0}-{w1})</div>', unsafe_allow_html=True)
     pinfo = players.set_index("player_id")
 
+    def asset_html(p_):
+        if p_.startswith("PICK_"):
+            s_, rd, orig = parse_pick(p_)
+            tier = pick_tier(p_)
+            return (f'<div class="tf-pl"><span class="pk">{str(s_)[2:]}<br>R{rd}</span><div class="tf-txt">'
+                    f'<div class="nm">{s_} {ORD.get(rd, "")}{" (" + tier + ")" if tier else ""}</div>'
+                    f'<div class="mt">from {lg["rosters"].get(orig, {}).get("owner", "")} · value {value(p_):,.0f}'
+                    f'</div></div></div>')
+        return (f'<div class="tf-pl"><img class="hs" src="{pinfo.at[p_, "headshot_url"]}"><div class="tf-txt">'
+                f'<div class="nm">{pinfo.at[p_, "name"]}</div><div class="mt">{pill(pinfo.at[p_, "position"])} '
+                f'{pinfo.at[p_, "team"]} · value {value(p_):,.0f}</div></div></div>')
+
     def side_html(label, pids, val):
-        rows_ = "".join(
-            f'<div class="tf-pl"><img class="hs" src="{pinfo.at[p_, "headshot_url"]}"><div class="tf-txt">'
-            f'<div class="nm">{pinfo.at[p_, "name"]}</div><div class="mt">{pill(pinfo.at[p_, "position"])} '
-            f'{pinfo.at[p_, "team"]} · value {value(p_):,.0f}</div></div></div>' for p_ in pids)
+        rows_ = "".join(asset_html(p_) for p_ in pids)
         return (f'<div class="tf-side"><div class="tf-lbl">{label} <span>{val:,.0f}</span></div>{rows_}</div>')
 
     cols = st.columns(2, gap="medium")
@@ -1304,15 +1538,15 @@ def view_trade_finder():
                 <span class="tf-fair">{'Even' if abs(diff) < 3 else (f'{diff:+.0f}% value to you')}</span></div>
               <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">for</div>
                 {side_html("You get", t["get"], t["vr"])}</div>
-              <div class="tf-foot"><span class="tf-g me">Your lineup +{t['gm']:.0f} pts</span>
-                <span class="tf-g them">Their lineup +{t['gt']:.0f} pts</span></div>
+              <div class="tf-foot"><span class="tf-g me">Your lineup {t['gm']:+.0f} pts</span>
+                <span class="tf-g them">Their lineup {t['gt']:+.0f} pts</span></div>
             </div>""")
             st.button("Open in trade analyzer", key=f"tf_{k}", on_click=use_trade,
                       args=([label_by_id[p_] for p_ in t["give"]], [label_by_id[p_] for p_ in t["get"]]),
                       width="stretch")
             st.write("")
-    st.caption("Fair = both sides within your fairness setting by market value. In 2-for-1 deals the second player "
-               "counts for 70% of their value, since one great player is worth more than two good ones.")
+    st.caption("Fair = both sides within your fairness setting by market value. In 2-for-1 deals the second piece "
+               "counts for 70% of its value. Picks under 400 value are left out to keep ideas realistic.")
 
 
 # ---------- tabs ----------
@@ -1618,7 +1852,8 @@ def view_breakouts():
     if league() and c2.toggle(f"Only available in {league()['name']}", key="bo_avail"):
         b = b[~b["player_id"].isin(league()["rostered"])]
     b = b.head(25).copy()
-    b["usage"] = b.apply(lambda r: f"{r['opps_before']:.1f} → {r['opps_last3']:.1f}", axis=1)
+    use = breakout_usage(DB_VERSION)
+    b["usage"] = [f"{use[p_][0]:.1f} → {use[p_][1]:.1f}" if p_ in use else "" for p_ in b["player_id"]]
     b["signal"] = b.apply(lambda r: " · ".join(
         s for s, ok in [("Usage spike", r["usage_change"] >= 3), ("Due for points", r["points_gap"] >= 3)] if ok), axis=1)
     sel = st.dataframe(
@@ -1628,7 +1863,8 @@ def view_breakouts():
         column_config={
             "headshot_url": st.column_config.ImageColumn("", width="small"),
             "name": "Player", "position": "Pos", "team": "Team",
-            "usage": st.column_config.TextColumn("Targets + carries / game", help="Earlier this season → last 3 games"),
+            "usage": st.column_config.TextColumn("Usage / game", help="Earlier this season → last 3 games. "
+                                                 "QBs: pass attempts + runs. Others: targets + carries."),
             "xfp_before": st.column_config.NumberColumn("xFP before", format="%.1f"),
             "xfp_last3": st.column_config.NumberColumn("xFP last 3", format="%.1f"),
             "ppr_last3": st.column_config.NumberColumn("Actual last 3", format="%.1f"),
@@ -1644,64 +1880,102 @@ def view_breakouts():
         render_profile(b.iloc[rows[0]]["player_id"], "bo_pf")
 
 def view_trades():
-    intro("Trade analyzer", "Judges a trade by value above replacement, so a 2-for-1 doesn't win just by adding bodies.", "Add players to each side. Copy the page link to share the exact trade.")
+    lg = league()
+    dyn = bool(lg and lg.get("dynasty"))
+    intro("Trade analyzer",
+          "Judges a trade by FantasyCalc dynasty market value, including draft picks, plus what it does to your "
+          "lineup this season." if dyn else
+          "Judges a trade by value above replacement, so a 2-for-1 doesn't win just by adding bodies.",
+          "Add players or picks to each side. Copy the page link to share the exact trade.")
     weeks = sorted(proj["week"].unique())
     end_default = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
     c0, c00 = st.columns([3, 1])
     w0, w1 = c0.slider("Weeks to count", min_value=weeks[0], max_value=weeks[-1], value=(weeks[0], end_default))
     sizes = [8, 10, 12, 14]
-    default_n = league()["teams"] if league() and league()["teams"] in sizes else 12
+    default_n = lg["teams"] if lg and lg["teams"] in sizes else 12
     teams_n = c00.selectbox("League size", sizes, index=sizes.index(default_n), key="league_size")
     init_from_url("give", "give")
     init_from_url("get", "get")
+    opts = asset_labels if dyn else labels
+    for k in ("give", "get"):
+        st.session_state[k] = [x for x in st.session_state.get(k, []) if x in opts]
     c1, c2 = st.columns(2)
-    give = c1.multiselect("You give", labels, key="give", placeholder="Players you're sending")
-    get = c2.multiselect("You get", labels, key="get", placeholder="Players you're receiving")
+    give = c1.multiselect("You give", opts, key="give", placeholder="Players or picks you're sending" if dyn else
+                          "Players you're sending")
+    get = c2.multiselect("You get", opts, key="get", placeholder="Players or picks you're receiving" if dyn else
+                         "Players you're receiving")
     sync_url("give", give)
     sync_url("get", get)
     vals = ros_values(w0, w1, teams_n, scoring_name, DB_VERSION).set_index("player_id")
+    mv = league_market_values()
 
     def side(labs):
         rows_ = []
         for lab in labs:
-            v = vals.loc[id_by_label[lab]]
-            rows_.append({"Player": lab, "Games": int(v["games"]), "ROS points": v["ros"],
-                          "Replacement": v["repl"], "Value": v["value"]})
+            pid = id_by_label[lab]
+            if pid.startswith("PICK_"):
+                rows_.append({"Asset": lab, "Market": mv.get(pid, 0.0), "ROS points": 0.0, "ROS value": 0.0})
+            else:
+                v = vals.loc[pid]
+                rows_.append({"Asset": lab, "Market": mv.get(pid, 0.0), "ROS points": v["ros"], "ROS value": v["value"]})
         return pd.DataFrame(rows_)
 
-    if give and get:
-        g, r = side(give), side(get)
-        gv, rv = g["Value"].sum(), r["Value"].sum()
-        diff = rv - gv
-        if abs(diff) < max(5, 0.08 * max(gv, rv, 1)):
-            verdict, fn = "Fair trade", st.info
-        elif diff > 0:
-            verdict, fn = "You win this trade", st.success
+    if not (give and get):
+        st.info("Add at least one player" + (" or pick" if dyn else "") + " to each side.")
+        return
+    g, r = side(give), side(get)
+    mg, mr = package_value(g["Market"].tolist()), package_value(r["Market"].tolist())
+    gv, rv = g["ROS value"].sum(), r["ROS value"].sum()
+    use_market = dyn and max(mg, mr) > 0
+    if use_market:
+        diff_pct = (mr - mg) / max(mg, mr) * 100
+        verdict, fn = (("Fair trade", st.info) if abs(diff_pct) < 8 else
+                       ("You win this trade", st.success) if diff_pct > 0 else ("You lose this trade", st.error))
+        fn(f"**{verdict}** · you give **{mg:,.0f}** and get **{mr:,.0f}** in dynasty market value ({diff_pct:+.0f}%)")
+        lineup = rv - gv
+        if gv == 0 and rv == 0:
+            raw = r["ROS points"].sum() - g["ROS points"].sum()
+            st.caption(f"This season: you {'gain' if raw >= 0 else 'lose'} {abs(raw):.1f} projected points from Weeks "
+                       f"{w0}-{w1} (none of these players project as a starter). Picks add nothing this season.")
         else:
-            verdict, fn = "You lose this trade", st.error
-        mv = league_market_values()
-        if mv:
-            mg = package_value([mv.get(id_by_label[l], 0) for l in give])
-            mr = package_value([mv.get(id_by_label[l], 0) for l in get])
-            if max(mg, mr) > 0:
-                st.markdown(f'<div class="tf-count">Trade market (FantasyCalc{" dynasty" if league().get("dynasty") else ""}): '
-                            f'you give <b>{mg:,.0f}</b> · you get <b>{mr:,.0f}</b> '
-                            f'({(mr - mg) / max(mg, mr) * 100:+.0f}%)</div>', unsafe_allow_html=True)
+            st.caption(f"This season: you {'gain' if lineup >= 0 else 'lose'} {abs(lineup):.1f} points of value above "
+                       f"replacement from Weeks {w0}-{w1}. Picks add nothing this season.")
+    elif gv == 0 and rv == 0:
+        # nobody involved is a startable player, so value above replacement is 0 on both sides; compare raw points
+        pg, pr_ = g["ROS points"].sum(), r["ROS points"].sum()
+        diff = pr_ - pg
+        verdict, fn = (("Fair trade", st.info) if abs(diff) < max(5, 0.08 * max(pg, pr_, 1)) else
+                       ("You win this trade", st.success) if diff > 0 else ("You lose this trade", st.error))
+        fn(f"**{verdict}** · none of these players project as a starter in a {teams_n}-team league, so this "
+           f"compares raw points: you {'gain' if diff >= 0 else 'lose'} {abs(diff):.1f} projected points "
+           f"(Weeks {w0}-{w1})")
+    else:
+        diff = rv - gv
+        verdict, fn = (("Fair trade", st.info) if abs(diff) < max(5, 0.08 * max(gv, rv, 1)) else
+                       ("You win this trade", st.success) if diff > 0 else ("You lose this trade", st.error))
+        if max(mg, mr) > 0:
+            st.markdown(f'<div class="tf-count">Trade market (FantasyCalc): you give <b>{mg:,.0f}</b> · you get '
+                        f'<b>{mr:,.0f}</b> ({(mr - mg) / max(mg, mr) * 100:+.0f}%)</div>', unsafe_allow_html=True)
         fn(f"**{verdict}** · you {'gain' if diff >= 0 else 'give up'} {abs(diff):.1f} points of value above "
            f"replacement (Weeks {w0}-{w1}, {teams_n}-team league)")
-        cfg = {c: st.column_config.NumberColumn(format="%.1f") for c in ["ROS points", "Value"]}
-        cfg["Replacement"] = st.column_config.NumberColumn(
-            "Replacement level", format="%.1f", help="Rest-of-season points of the last startable player at that position")
-        a, bcol = st.columns(2)
-        a.metric("You give", f"{gv:.1f} value")
-        a.caption(f"{g['ROS points'].sum():.0f} raw projected points")
-        a.dataframe(g, hide_index=True, width="stretch", column_config=cfg)
-        bcol.metric("You get", f"{rv:.1f} value")
-        bcol.caption(f"{r['ROS points'].sum():.0f} raw projected points")
-        bcol.dataframe(r, hide_index=True, width="stretch", column_config=cfg)
-        st.caption("Share it by copying the page link.")
-    else:
-        st.info("Add at least one player to each side.")
+    cfg = {"Market": st.column_config.NumberColumn("Market value", format="%,.0f"),
+           "ROS points": st.column_config.NumberColumn("ROS points", format="%.1f"),
+           "ROS value": st.column_config.NumberColumn("ROS value", format="%.1f",
+                                                      help="Rest-of-season points above a replacement-level starter")}
+    if not max(mg, mr):
+        g, r = g.drop(columns="Market"), r.drop(columns="Market")
+    a, bcol = st.columns(2)
+    a.metric("You give", f"{mg:,.0f}" if use_market else f"{gv:.1f} value")
+    a.dataframe(g, hide_index=True, width="stretch", column_config=cfg)
+    bcol.metric("You get", f"{mr:,.0f}" if use_market else f"{rv:.1f} value")
+    bcol.dataframe(r, hide_index=True, width="stretch", column_config=cfg)
+    if any(id_by_label[x].startswith("DST_") or players.set_index("player_id").get("position", pd.Series()).get(
+            id_by_label[x]) == "K" for x in give + get):
+        st.caption("FantasyCalc doesn't put a market value on kickers or defenses, so they count as 0 there.")
+    st.caption("In multi-asset deals the extra pieces count for 70% of their value, since one great player is worth "
+               "more than two good ones. " + ("Next year's picks are valued as early, mid, or late from the original "
+                                               "team's current record." if dyn else ""))
+
 
 def view_accuracy():
     intro("Accuracy", "Projections compared with what actually happened, week by week.", "Pick a week to see the best calls and the biggest misses.")
@@ -1829,7 +2103,10 @@ if section == "This Week":
     st.session_state.setdefault("tw_view", "Start / Sit" if "ss" in qp else "Projections")
     view = st.segmented_control("View", ["Projections", "Start / Sit"], required=True, key="tw_view",
                                 label_visibility="collapsed")
-    view_projections() if view == "Projections" else view_startsit()
+    if view == "Projections":
+        view_projections()
+    else:
+        view_startsit()
 if section == "My Team":
     view_team()
 if section == "League":
@@ -1842,7 +2119,10 @@ if section == "Rankings":
     st.session_state.setdefault("rk_view", "Rest of season")
     view = st.segmented_control("View", ["Rest of season", "Breakouts"], required=True, key="rk_view",
                                 label_visibility="collapsed")
-    view_rankings() if view == "Rest of season" else view_breakouts()
+    if view == "Rest of season":
+        view_rankings()
+    else:
+        view_breakouts()
 if section == "Players":
     view_players()
 if section == "Trades":
@@ -1851,14 +2131,20 @@ if section == "Trades":
     st.session_state.setdefault("tr_view", "Trade analyzer")
     view = st.segmented_control("View", ["Trade analyzer", "Trade finder"], required=True, key="tr_view",
                                 label_visibility="collapsed")
-    view_trades() if view == "Trade analyzer" else view_trade_finder()
+    if view == "Trade analyzer":
+        view_trades()
+    else:
+        view_trade_finder()
 if section == "How It Works":
     section_header("How it works")
     st.session_state["_nested"] = True
     st.session_state.setdefault("hw_view", "Accuracy")
     view = st.segmented_control("View", ["Accuracy", "The model"], required=True, key="hw_view",
                                 label_visibility="collapsed")
-    view_accuracy() if view == "Accuracy" else view_model()
+    if view == "Accuracy":
+        view_accuracy()
+    else:
+        view_model()
 
 updated = metrics.get("updated_at", "")
 html(f"""<div class="foot"><div>Red Zone Lab · projections update Tue, Sat and Sun mornings{' · last updated ' + updated if updated else ''}</div>

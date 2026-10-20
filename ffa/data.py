@@ -116,7 +116,7 @@ def load_player_weeks():
 def load_games():
     g = pd.read_csv(RAW_DIR / "games.csv")
     g = g[(g["season"] >= FIRST_SEASON) & (g["game_type"] == "REG")]
-    return g[["game_id", "season", "week", "gameday", "home_team", "away_team",
+    return g[["game_id", "season", "week", "gameday", "gametime", "home_team", "away_team",
               "home_score", "away_score", "spread_line", "total_line"]].copy()
 
 
