@@ -21,6 +21,7 @@ Seven sections, each with one job: **This Week** (projections and start/sit), **
 | **Power rankings + playoff odds** | Simulates the rest of your Sleeper league's season 5,000 times (real schedule, current records, every team's best projected lineup, your playoff format) for each team's playoff, bye, and title odds |
 | **Matchup preview** | Pulls this week's opponent from Sleeper, shows both starting lineups, and gives a win probability plus lineup tips that would raise it |
 | **Trade finder** | Scans every roster in your Sleeper league for 1-for-1 and 2-for-1 trades (players and dynasty draft picks) that are fair by FantasyCalc market value (dynasty or redraft, superflex-aware) and improve both teams' starting lineups |
+| **League trades** | Every trade in your Sleeper league since it was created, graded with today's market values, with a won/lost report card per team. Traded picks that have been used show the player they became |
 | **Trade Analyzer** | Values each side by rest-of-season points above a replacement-level starter (adjusts for league size), so 2-for-1 deals are judged fairly |
 | **Accuracy** | Projections are saved before kickoff every week and scored against real results: weekly average miss vs. baseline, best calls, biggest misses |
 | **Model** | Backtest results, what drives the projections, and feature experiments that didn't make the cut |
@@ -95,6 +96,7 @@ ffa/
   breakouts.py             xFP model and breakout scoring
   sleeper.py               Sleeper league import
   fantasycalc.py           trade market values
+  trade_history.py         every past trade in a Sleeper league, with picks resolved
   season_sim.py            Monte Carlo season and playoff simulation
   kdst.py                  kicker and defense projections
   weather.py               game-day forecasts
@@ -114,7 +116,7 @@ streamlit run app.py
 
 ## Weekly updates
 
-A GitHub Actions workflow runs `scripts/update.py` every Tuesday morning after Monday Night Football (new stats and projections), plus Saturday and Sunday mornings (final injury reports), and commits the refreshed database, so the deployed app always shows the next week. You can also trigger it by hand from the Actions tab.
+A GitHub Actions workflow runs `scripts/update.py` Monday and Tuesday mornings (new stats and projections), Friday (Thursday night results), and Saturday and Sunday mornings (final injury reports), and commits the refreshed database, so the deployed app always shows the next week. You can also trigger it by hand from the Actions tab.
 
 ## Limitations
 

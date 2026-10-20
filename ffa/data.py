@@ -146,6 +146,14 @@ def load_id_map():
     return d.rename(columns={"gsis_id": "player_id"}).drop_duplicates("sleeper_id")
 
 
+def load_sleeper_names():
+    """Name, position, and team for every Sleeper player ID (rookies and retired players too), for trade history."""
+    d = pd.read_csv(RAW_DIR / "db_playerids.csv", usecols=["sleeper_id", "name", "position", "team"],
+                    low_memory=False).dropna(subset=["sleeper_id", "name"])
+    d["sleeper_id"] = d["sleeper_id"].astype("int64").astype(str)
+    return d.drop_duplicates("sleeper_id")
+
+
 def build_database(refresh_current=True):
     download_raw(refresh_current)
     pw = load_player_weeks()
@@ -157,6 +165,7 @@ def build_database(refresh_current=True):
         load_teams().to_sql("teams", con, if_exists="replace", index=False)
         load_injuries().to_sql("injuries", con, if_exists="replace", index=False)
         load_id_map().to_sql("id_map", con, if_exists="replace", index=False)
+        load_sleeper_names().to_sql("sleeper_names", con, if_exists="replace", index=False)
         con.execute("CREATE INDEX IF NOT EXISTS ix_pw_player ON player_weeks(player_id, season, week)")
     print(f"  player_weeks: {len(pw):,} rows | games: {len(games):,} rows")
     return pw, games

@@ -104,3 +104,31 @@ def pick_ownership(rosters, traded, seasons, rounds):
     for v in out.values():
         v.sort()
     return out
+
+
+def league(league_id):
+    return _get(f"/league/{league_id}") or {}
+
+
+def transactions(league_id, week):
+    """Every transaction in one week ("leg") of a league season. Offseason moves land in week 0 or 1."""
+    return _get(f"/league/{league_id}/transactions/{week}") or []
+
+
+def drafts(league_id):
+    return _get(f"/league/{league_id}/drafts") or []
+
+
+def draft(draft_id):
+    return _get(f"/draft/{draft_id}") or {}
+
+
+def draft_picks(draft_id):
+    return _get(f"/draft/{draft_id}/picks") or []
+
+
+def player_photo(sleeper_id):
+    sid = str(sleeper_id)
+    if sid.isalpha():
+        return f"https://sleepercdn.com/images/team_logos/nfl/{sid.lower()}.png"
+    return f"https://sleepercdn.com/content/nfl/players/thumb/{sid}.jpg"

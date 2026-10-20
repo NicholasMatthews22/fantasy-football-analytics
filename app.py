@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ffa import fantasycalc, season_sim, sleeper
+from ffa import fantasycalc, season_sim, sleeper, trade_history
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
@@ -1276,7 +1276,6 @@ def view_matchup(week):
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner=False)
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
 def market_rows(dynasty, superflex, teams, ppr):
     try:
         return fantasycalc.fetch_rows(dynasty, superflex, teams, ppr)
@@ -1547,6 +1546,213 @@ def view_trade_finder():
             st.write("")
     st.caption("Fair = both sides within your fairness setting by market value. In 2-for-1 deals the second piece "
                "counts for 70% of its value. Picks under 400 value are left out to keep ideas realistic.")
+
+
+# ---------- league trade history ----------
+@st.cache_data(ttl=1800, show_spinner=False)
+def league_trade_log(league_id, rounds):
+    return trade_history.collect(league_id, sleeper, rounds)
+
+
+@st.cache_data(ttl=24 * 3600, show_spinner=False)
+def sleeper_names(db_version):
+    try:
+        d = query("SELECT * FROM sleeper_names")
+    except Exception:
+        return {}
+    return {r.sleeper_id: (r.name, r.position, r.team) for r in d.itertuples()}
+
+
+TH_CSS = """<style>
+.th-sides { display: grid; gap: 10px; }
+.th-side { background: var(--surface2); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.th-side.win { box-shadow: inset 0 0 0 1px rgba(155,107,255,.55); }
+.th-team { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .88rem; margin-bottom: 8px; }
+.th-team .tot { margin-left: auto; color: var(--muted); font-weight: 600; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.th-v { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+.th-v.won { background: rgba(155,107,255,.18); color: #c9b3ff; }
+.th-v.big { background: rgba(255,79,129,.16); color: #ff9db8; }
+.th-faab { font-size: .76rem; color: var(--muted); margin-top: 2px; }
+.th-when { color: var(--muted); }
+.th-from { color: var(--muted); font-weight: 500; font-size: .78rem; }
+.tf-txt .mt b { color: #e8ebf2; }
+@media (max-width: 640px) { .th-sides { grid-template-columns: 1fr !important; } }
+</style>"""
+
+
+def view_trade_history():
+    intro("League trade history", "Every trade in your league since it started, graded with today's market values. "
+          "Draft picks that have been used show the player they turned into.",
+          "Filter by team or season. Each side's total counts extra pieces at 70%, the same way the analyzer does.")
+    lg = league()
+    if not lg:
+        st.info("Connect your Sleeper league in My Team to see its trade history.")
+        return
+    with st.spinner("Pulling every trade from Sleeper..."):
+        try:
+            trades, teams_ = league_trade_log(lg["id"], lg.get("pick_rounds", 5))
+        except sleeper.SleeperError as e:
+            st.error(str(e))
+            return
+    if not trades:
+        st.info("No trades yet in this league.")
+        return
+    teams_ = {**{rid: {"owner": t["owner"], "avatar": t.get("avatar")} for rid, t in lg["rosters"].items()}, **teams_}
+
+    # values: FantasyCalc by Sleeper ID for players, pick curve for picks that haven't been drafted
+    args = (lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+    rows = market_rows(*args)
+    pval = fantasycalc.player_values(rows)
+    fc_info = {str((r.get("player") or {}).get("sleeperId")): ((r["player"].get("name"), r["player"].get("position"),
+               r["player"].get("maybeTeam"))) for r in rows if (r.get("player") or {}).get("sleeperId")}
+    open_seasons = sorted({pk["season"] for t in trades for sd in t["sides"].values() for pk in sd["picks"]
+                           if not pk["became"]})
+    pick_curve = fantasycalc.pick_values(rows, open_seasons, lg.get("pick_rounds", 5)) if open_seasons else {}
+    names_ = sleeper_names(DB_VERSION)
+    ginfo = players.set_index("player_id")
+
+    def who(sid):
+        sid = str(sid)
+        if sid.isalpha():
+            return f"{team_attr(sid, 'team_nick', sid) or sid} D/ST", "DST", sid
+        if sid in names_:
+            n_, p_, t_ = names_[sid]
+            t_ = fc_info.get(sid, (None, None, None))[2] or {"SFO": "SF", "NOS": "NO", "LVR": "LV", "KCC": "KC", "GBP": "GB",
+                 "TBB": "TB", "NEP": "NE", "JAC": "JAX"}.get(t_, t_)
+            return n_, p_, t_
+        if sid in fc_info and fc_info[sid][0]:
+            return fc_info[sid]
+        g = gsis_by_sleeper.get(sid)
+        if g in ginfo.index:
+            return ginfo.at[g, "name"], ginfo.at[g, "position"], ginfo.at[g, "team"]
+        return "Unknown player", "", ""
+
+    def pick_value(pk):
+        if pk["became"]:
+            return pval.get(pk["became"]["player_id"], 0.0)
+        tier = pick_tier(pick_id(pk["season"], pk["round"], pk["orig"])) if pk["season"] in PICK_SEASONS else None
+        return float(pick_curve.get((pk["season"], pk["round"], tier)) or pick_curve.get((pk["season"], pk["round"], None)) or 0)
+
+    def side_vals(sd, sent=False):
+        ps, pk = (sd["sent_players"], sd["sent_picks"]) if sent else (sd["players"], sd["picks"])
+        return [pval.get(p_, 0.0) for p_ in ps] + [pick_value(x) for x in pk]
+
+    # grade every trade: net = what you got minus what you gave, both as package values
+    for t in trades:
+        for rid, sd in t["sides"].items():
+            sd["recv"] = package_value(side_vals(sd))
+            sd["sent"] = package_value(side_vals(sd, sent=True))
+            sd["net"] = sd["recv"] - sd["sent"]
+        best = max(t["sides"], key=lambda r: t["sides"][r]["net"])
+        b = t["sides"][best]
+        t["margin"] = b["net"] / max(b["recv"], b["sent"], 1)
+        t["winner"] = best if t["margin"] >= 0.10 else None
+
+    # ---- filters ----
+    team_names = {rid: teams_.get(rid, {}).get("owner", f"Team {rid}") for rid in
+                  sorted({r for t in trades for r in t["sides"]}, key=lambda r: teams_.get(r, {}).get("owner", ""))}
+    seasons_ = sorted({t["season"] for t in trades}, reverse=True)
+    c1, c2, c3 = st.columns([2, 1.2, 1.6])
+    pick_team = c1.selectbox("Team", ["Whole league"] + list(team_names.values()), key="th_team")
+    pick_season = c2.selectbox("Season", ["All seasons"] + seasons_, key="th_season")
+    sorts = ["Newest first", "Oldest first", "Most lopsided"]
+    rid_sel = next((r for r, n in team_names.items() if n == pick_team), None)
+    if rid_sel is not None:
+        sorts += ["Best for this team", "Worst for this team"]
+    order = c3.selectbox("Sort", sorts, key="th_sort")
+
+    shown = [t for t in trades if (pick_season == "All seasons" or t["season"] == pick_season)
+             and (rid_sel is None or rid_sel in t["sides"])]
+    if order == "Oldest first":
+        shown = shown[::-1]
+    elif order == "Most lopsided":
+        shown = sorted(shown, key=lambda t: -t["margin"])
+    elif order == "Best for this team":
+        shown = sorted(shown, key=lambda t: -t["sides"][rid_sel]["net"])
+    elif order == "Worst for this team":
+        shown = sorted(shown, key=lambda t: t["sides"][rid_sel]["net"])
+
+    # ---- summary: one team's record, or the league report card ----
+    def team_line(rid, ts):
+        w = sum(1 for t in ts if t["winner"] == rid)
+        l_ = sum(1 for t in ts if t["winner"] is not None and t["winner"] != rid)
+        return {"Team": team_names[rid], "Trades": len(ts), "Won": w, "Lost": l_, "Even": len(ts) - w - l_,
+                "Net value": round(sum(t["sides"][rid]["net"] for t in ts))}
+
+    in_season = [t for t in trades if pick_season == "All seasons" or t["season"] == pick_season]
+    if rid_sel is not None:
+        s_ = team_line(rid_sel, shown)
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Trades", s_["Trades"])
+        k2.metric("Won-Lost-Even", f'{s_["Won"]}-{s_["Lost"]}-{s_["Even"]}')
+        k3.metric("Net value", f'{s_["Net value"]:+,}', help="Today's value of everything received minus everything "
+                  "given up, added across these trades.")
+    else:
+        card = pd.DataFrame([team_line(r, [t for t in in_season if r in t["sides"]]) for r in team_names])
+        card = card[card["Trades"] > 0].sort_values("Net value", ascending=False)
+        st.markdown(f'<div class="tf-count"><b>{len(in_season)}</b> trades · trade report card by team</div>',
+                    unsafe_allow_html=True)
+        st.dataframe(card, hide_index=True, width="stretch", column_config={
+            "Net value": st.column_config.NumberColumn(format="%+d", help="Today's value received minus value given up"),
+        })
+
+    if not shown:
+        st.info("No trades match these filters.")
+        return
+
+    # ---- trade cards ----
+    def asset(sid):
+        name, pos_, tm = who(sid)
+        v = pval.get(str(sid), 0.0)
+        return (f'<div class="tf-pl"><img class="hs" src="{sleeper.player_photo(sid)}" onerror="this.style.visibility=\'hidden\'">'
+                f'<div class="tf-txt"><div class="nm">{name}</div><div class="mt">{pill(pos_) if pos_ in POS_COLORS else ""} '
+                f'{tm or "FA"} · value {v:,.0f}</div></div></div>')
+
+    def pick_html(pk):
+        rd = ORD.get(pk["round"], f'{pk["round"]}th')
+        frm = teams_.get(pk["orig"], {}).get("owner", f'Team {pk["orig"]}')
+        v = pick_value(pk)
+        if pk["became"]:
+            b = pk["became"]
+            name, pos_, tm = (b["name"], b["position"], b["team"]) if b["name"] else who(b["player_id"])
+            return (f'<div class="tf-pl"><img class="hs" src="{sleeper.player_photo(b["player_id"])}" '
+                    f'onerror="this.style.visibility=\'hidden\'"><div class="tf-txt">'
+                    f'<div class="nm">{pk["season"]} {rd} pick {b["slot"]} <span class="th-from">from {frm}</span></div>'
+                    f'<div class="mt">Became <b>{name}</b> · {pos_ or ""} {tm or ""} · value {v:,.0f}</div></div></div>')
+        return (f'<div class="tf-pl"><span class="pk">{str(pk["season"])[2:]}<br>R{pk["round"]}</span><div class="tf-txt">'
+                f'<div class="nm">{pk["season"]} {rd} pick <span class="th-from">from {frm}</span></div><div class="mt">Not drafted yet · '
+                f'value {v:,.0f}</div></div></div>')
+
+    st.markdown(TH_CSS, unsafe_allow_html=True)
+    st.markdown(f'<div class="tf-count">Showing <b>{len(shown)}</b> trade{"s" if len(shown) != 1 else ""} · values are '
+                f'today\'s FantasyCalc {"dynasty" if lg.get("dynasty") else "redraft"} market</div>', unsafe_allow_html=True)
+    for t in shown[:60]:
+        sides = t["sides"]
+        if t["winner"] is None:
+            verdict = '<span class="th-v">Even trade</span>'
+        else:
+            big = t["margin"] >= 0.35
+            verdict = (f'<span class="th-v {"big" if big else "won"}">{"Lopsided: " if big else ""}'
+                       f'{teams_.get(t["winner"], {}).get("owner", "")} won by {t["margin"] * 100:.0f}%</span>')
+        when = t["time"].strftime("%b %-d, %Y") if t["time"] else str(t["season"])
+        in_season_ = t["time"] is not None and (t["time"].month >= 9 or t["time"].month == 1)
+        wk = f' · Week {t["week"]}' if t["week"] and in_season_ else " · Offseason"
+        cols_html = ""
+        for rid, sd in sides.items():
+            tm = teams_.get(rid, {"owner": f"Team {rid}"})
+            items = "".join(asset(p_) for p_ in sd["players"]) + "".join(pick_html(x) for x in sd["picks"])
+            faab = f'<div class="th-faab">+ ${sd["faab"]} FAAB</div>' if sd["faab"] else ""
+            if not items and not faab:
+                items = '<div class="th-faab">Nothing</div>'
+            cols_html += (f'<div class="th-side{" win" if t["winner"] == rid else ""}"><div class="th-team">'
+                          f'{avatar_html(tm, 24)} {tm["owner"]} gets<span class="tot">{sd["recv"]:,.0f}</span></div>'
+                          f'{items}{faab}</div>')
+        html(f"""<div class="tf-card"><div class="tf-head"><span class="th-when">{when}{wk}</span>{verdict}</div>
+            <div class="th-sides" style="grid-template-columns: repeat({len(sides)}, minmax(0, 1fr))">{cols_html}</div></div>""")
+    if len(shown) > 60:
+        st.caption(f"Showing the first 60 of {len(shown)} trades. Narrow it down with the filters.")
+    st.caption("Grades use today's values, so they show how each trade has aged, not whether it was fair at the time. "
+               "A team wins a trade when its side is worth at least 10% more; 35% or more is lopsided.")
 
 
 # ---------- tabs ----------
@@ -2129,12 +2335,14 @@ if section == "Trades":
     section_header("Trades")
     st.session_state["_nested"] = True
     st.session_state.setdefault("tr_view", "Trade analyzer")
-    view = st.segmented_control("View", ["Trade analyzer", "Trade finder"], required=True, key="tr_view",
-                                label_visibility="collapsed")
+    view = st.segmented_control("View", ["Trade analyzer", "Trade finder", "League trades"], required=True,
+                                key="tr_view", label_visibility="collapsed")
     if view == "Trade analyzer":
         view_trades()
-    else:
+    elif view == "Trade finder":
         view_trade_finder()
+    else:
+        view_trade_history()
 if section == "How It Works":
     section_header("How it works")
     st.session_state["_nested"] = True
@@ -2147,6 +2355,6 @@ if section == "How It Works":
         view_model()
 
 updated = metrics.get("updated_at", "")
-html(f"""<div class="foot"><div>Red Zone Lab · projections update Tue, Sat and Sun mornings{' · last updated ' + updated if updated else ''}</div>
+html(f"""<div class="foot"><div>Red Zone Lab · data updates Mon, Tue, Fri, Sat and Sun mornings{' · last updated ' + updated if updated else ''}</div>
 <div>Data: <a href="https://github.com/nflverse" target="_blank">nflverse</a> · <a href="https://sleeper.com" target="_blank">Sleeper</a> ·
 <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · <a href="https://github.com/NicholasMatthews22/fantasy-football-analytics" target="_blank">Source code</a></div></div>""")
