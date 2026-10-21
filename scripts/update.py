@@ -14,7 +14,7 @@ import pandas as pd  # noqa: E402
 
 import json  # noqa: E402
 
-from ffa import data, features, model, breakouts, kdst  # noqa: E402
+from ffa import data, features, model, breakouts, kdst, benchmark  # noqa: E402
 from ffa.config import METRICS_PATH  # noqa: E402
 from ffa.config import DB_PATH  # noqa: E402
 from ffa.config import CURRENT_SEASON  # noqa: E402
@@ -26,7 +26,7 @@ def main(offline=False):
 
     print("2/4 Training model + backtesting")
     train = features.training_frame(pw, games)
-    models, metrics = model.train_and_save(train)
+    models, metrics, holdout = model.train_and_save(train)
     for label, rows in metrics.items():
         a = rows[0]
         print(f"  {label}: model MAE {a['model_mae']} vs baseline {a['baseline_mae']} "
@@ -103,11 +103,40 @@ def main(offline=False):
     print("4/5 Saving projections for the accuracy tracker")
     track_accuracy(proj, train, pw, games, last_week)
 
+    print("   Head-to-head test against Sleeper's projections")
+    benchmark_vs_sleeper(holdout, next_week)
+
     print("5/5 Finding breakouts")
     b, weekly = breakouts.find_breakouts(pw, set(proj["player_id"]))
     data.write_table(b.round(3), "breakouts")
     data.write_table(weekly.round(3), "usage_weekly")
     print(f"  {len(b)} candidates | season {CURRENT_SEASON}, through week {last_week}")
+
+
+def benchmark_vs_sleeper(holdout, next_week):
+    with sqlite3.connect(DB_PATH) as con:
+        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", con)["name"].tolist()
+        store = pd.read_sql("SELECT * FROM sleeper_proj", con) if "sleeper_proj" in tables else \
+            pd.DataFrame(columns=["season", "week", "sleeper_id", "sleeper_proj"])
+    wanted = [(CURRENT_SEASON - 1, w) for w in range(1, 19)] + [(CURRENT_SEASON, w) for w in range(1, next_week + 1)]
+    # the upcoming week is re-saved every run until it's played, like our own live projections
+    store = benchmark.update_store(store, wanted, refresh={(CURRENT_SEASON, next_week)})
+    data.write_table(store, "sleeper_proj")
+
+    acc = data.read_table("accuracy")
+    ours = pd.concat([holdout, acc[["season", "week", "player_id", "position", "ewm_ppr", "proj", "ppr"]]]
+                     if holdout is not None else [acc], ignore_index=True)
+    summary, weekly, games = benchmark.compare(ours, store, data.read_table("id_map"))
+    if len(games):
+        data.write_table(games[["season", "week", "player_id", "position", "proj", "sleeper_proj", "ppr"]].round(2),
+                         "benchmark_games")
+    m = json.loads(METRICS_PATH.read_text())
+    m["sleeper_benchmark"] = {"summary": summary, "weekly": weekly}
+    METRICS_PATH.write_text(json.dumps(m, indent=2))
+    for r in summary:
+        if r["position"] == "ALL":
+            print(f"  {r['season']}: ours {r['our_mae']} vs Sleeper {r['sleeper_mae']} avg miss "
+                  f"({r['games']:,} player-games, ours closer {r['closer_pct']:.0%})")
 
 
 HIST_COLS = ["season", "week", "player_id", "name", "position", "team", "ewm_ppr",

@@ -42,6 +42,7 @@ def simulate(teams, wins, pf, weeks, playoff_teams, playoff_mu, playoff_sd, n_si
             W[:, i] += won
             W[:, j] += ~won
     order = np.argsort(-(W + PF * 1e-6), axis=1)          # wins first, points for breaks ties
+    finish = np.argsort(order, axis=1)                      # each team's final standing (0 = first place)
     p = min(playoff_teams, T)
     size = 2 ** math.ceil(math.log2(p)) if p > 1 else 1
     n_byes = size - p
@@ -54,4 +55,4 @@ def simulate(teams, wins, pf, weeks, playoff_teams, playoff_mu, playoff_sd, n_si
         byes[seeds[:n_byes]] += 1
         titles[bracket_winner(seeds, playoff_mu, playoff_sd, rng)] += 1
     return {"avg_wins": W.mean(axis=0), "playoff_pct": made / n_sims, "bye_pct": byes / n_sims,
-            "title_pct": titles / n_sims, "has_byes": n_byes > 0}
+            "title_pct": titles / n_sims, "has_byes": n_byes > 0, "avg_finish": finish.mean(axis=0) + 1}

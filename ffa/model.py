@@ -70,27 +70,31 @@ def _score(test, preds):
 
 
 def backtest(df):
-    """Two honest tests: train on earlier seasons, predict a season the model never saw."""
-    results = {}
+    """Two honest tests: train on earlier seasons, predict a season the model never saw.
+    Also returns last season's held-out predictions, for the head-to-head test against Sleeper."""
+    results, holdout = {}, None
     tests = {f"{CURRENT_SEASON - 1} season": CURRENT_SEASON - 1,
              f"{CURRENT_SEASON} season so far": CURRENT_SEASON}
     for label, season in tests.items():
         train, test = df[df["season"] < season], df[df["season"] == season]
         if len(test) == 0:
             continue
-        results[label] = _score(test, predict(fit(train), test))
-    return results
+        preds = predict(fit(train), test)
+        results[label] = _score(test, preds)
+        if season == CURRENT_SEASON - 1:
+            holdout = test[["season", "week", "player_id", "position", "ewm_ppr", "ppr"]].join(preds[["proj"]])
+    return results, holdout
 
 
 def train_and_save(df):
-    metrics = backtest(df)
+    metrics, holdout = backtest(df)
     models = fit(df)
     MODEL_DIR.mkdir(exist_ok=True)
     joblib.dump(models, MODEL_DIR / "models.joblib")
     imp = feature_importance(models["proj"], df)
     METRICS_PATH.write_text(json.dumps({"backtest": metrics, "importance": imp,
                                         "train_rows": int(len(df))}, indent=2))
-    return models, metrics
+    return models, metrics, holdout
 
 
 def feature_importance(model, df, n=4000):

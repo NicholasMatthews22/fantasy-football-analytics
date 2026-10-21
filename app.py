@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ffa import breakouts as breakout_model, fantasycalc, season_sim, sleeper, trade_history
+from ffa import breakouts as breakout_model, fantasycalc, league_history, season_sim, sleeper, trade_history
 from ffa.config import DB_PATH, FANTASY_LAST_WEEK, METRICS_PATH
 from ffa.features import FEATURE_LABELS
 
@@ -1529,13 +1529,21 @@ def view_trade_finder():
         rows_ = "".join(asset_html(p_) for p_ in pids)
         return (f'<div class="tf-side"><div class="tf-lbl">{label} <span>{val:,.0f}</span></div>{rows_}</div>')
 
+    windows = {}
+    if lg.get("dynasty") and market:
+        try:
+            ol_, _, _ = team_outlook()
+            windows = {r: outlook_tag(l_) for r, l_ in zip(ol_["rid"], ol_["label"])}
+            st.markdown(OL_CSS, unsafe_allow_html=True)
+        except Exception:
+            windows = {}
     cols = st.columns(2, gap="medium")
     for k, t in enumerate(picked):
         diff = (t["vr"] - t["vg"]) / max(t["vg"], t["vr"]) * 100
         with cols[k % 2]:
             html(f"""<div class="tf-card">
               <div class="tf-head"><span class="tf-who">{avatar_html(lg["rosters"][t["rid"]], 26)} <b>{t['team']}</b>
-                <span class="tf-rec">{record(lg["rosters"][t["rid"]])}</span></span>
+                <span class="tf-rec">{record(lg["rosters"][t["rid"]])}</span>{windows.get(t["rid"], "")}</span>
                 <span class="tf-fair">{'Even' if abs(diff) < 3 else (f'{diff:+.0f}% value to you')}</span></div>
               <div class="tf-sides">{side_html("You give", t["give"], t["vg"])}<div class="tf-arrow">for</div>
                 {side_html("You get", t["get"], t["vr"])}</div>
@@ -1755,6 +1763,323 @@ def view_trade_history():
         st.caption(f"Showing the first 60 of {len(shown)} trades. Narrow it down with the filters.")
     st.caption("Grades use today's values, so they show how each trade has aged, not whether it was fair at the time. "
                "A team wins a trade when its side is worth at least 10% more; 35% or more is lopsided.")
+
+
+# ---------- league history ----------
+@st.cache_data(ttl=3600, show_spinner=False)
+def league_history_data(league_id, completed_week):
+    return league_history.collect(league_id, sleeper, season, completed_week)
+
+
+LH_CSS = """<style>
+.lh-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-bottom: 6px; }
+.lh-ch { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.lh-ch.gold { border-color: rgba(255,196,87,.55); background: linear-gradient(160deg, rgba(255,196,87,.10), var(--surface) 60%); }
+.lh-yr { font-size: .7rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.lh-who { display: flex; align-items: center; gap: 9px; margin: 8px 0 4px; font-weight: 800; font-size: 1rem; }
+.lh-sub { color: var(--muted); font-size: .78rem; }
+.lh-recs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.lh-rec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.lh-rec .k { font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.lh-rec .v { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 1.25rem; margin: 4px 0; }
+.lh-rec .t { display: flex; align-items: center; gap: 7px; font-size: .84rem; font-weight: 600; }
+.lh-rec .d { color: var(--muted); font-size: .76rem; margin-top: 3px; }
+</style>"""
+
+
+def view_history():
+    intro("League history", "Every season since your league started: champions, all-time standings, head-to-head "
+          "records, and the record book.", "Regular-season games only. Teams carry over by roster, so names are "
+          "today's team names.")
+    lg = league()
+    if not lg:
+        st.info("Connect your Sleeper league in My Team to see its history.")
+        return
+    with st.spinner("Pulling every season from Sleeper..."):
+        try:
+            games, seasons_ = league_history_data(lg["id"], last_week)
+        except sleeper.SleeperError as e:
+            st.error(str(e))
+            return
+    if games.empty:
+        st.info("No games played yet.")
+        return
+    teams_ = lg["rosters"]
+    name = lambda r: teams_.get(r, {}).get("owner", f"Team {r}")
+    av = lambda r, n=26: avatar_html(teams_.get(r, {"owner": f"Team {r}"}), n)
+    st.markdown(LH_CSS, unsafe_allow_html=True)
+
+    # champions, newest first
+    tbl = league_history.standings(games, seasons_)
+    cards = []
+    for sn in seasons_:
+        if sn["champion"]:
+            cards.append(f'<div class="lh-ch gold"><div class="lh-yr">{sn["season"]} champion</div>'
+                         f'<div class="lh-who">{av(sn["champion"], 30)} {name(sn["champion"])}</div>'
+                         f'<div class="lh-sub">Beat {name(sn["runner_up"])} in the final</div></div>')
+        elif sn.get("in_progress"):
+            cur = league_history.team_games(games[games["season"] == sn["season"]])
+            if len(cur):
+                rec = cur.groupby("team").agg(w=("result", lambda r: (r == "W").sum()), pf=("pf", "sum"))
+                lead = rec.sort_values(["w", "pf"], ascending=False).index[0]
+                cards.append(f'<div class="lh-ch"><div class="lh-yr">{sn["season"]} · in progress</div>'
+                             f'<div class="lh-who">{av(lead, 30)} {name(lead)}</div>'
+                             f'<div class="lh-sub">Best record so far</div></div>')
+    if cards:
+        st.markdown("#### Champions")
+        html('<div class="lh-champs">' + "".join(cards) + "</div>")
+
+    # all-time standings
+    st.markdown("#### All-time standings")
+    view_ = pd.DataFrame({
+        "Team": tbl["team"].map(name), "Seasons": tbl["seasons"],
+        "Record": [f"{w}-{l}" + (f"-{t}" if t else "") for w, l, t in zip(tbl["W"], tbl["L"], tbl["T"])],
+        "Win %": tbl["win_pct"], "Points for": tbl["PF"].round(0), "Points against": tbl["PA"].round(0),
+        "Playoffs": tbl["playoffs"], "Titles": tbl["titles"]})
+    st.dataframe(view_, hide_index=True, width="stretch", column_config={
+        "Win %": st.column_config.NumberColumn(format="percent"),
+        "Points for": st.column_config.NumberColumn(format="%d"),
+        "Points against": st.column_config.NumberColumn(format="%d")})
+
+    # head to head
+    st.markdown("#### Head to head")
+    rids = sorted(tbl["team"], key=name)
+    mine = lg.get("my_roster_id")
+    pick = st.selectbox("Team", rids, index=rids.index(mine) if mine in rids else 0, format_func=name, key="lh_team")
+    h = league_history.head_to_head(games, pick)
+    if len(h):
+        h = h.assign(Opponent=h["opp"].map(name),
+                     Record=[f"{w}-{l}" + (f"-{t}" if t else "") for w, l, t in zip(h["W"], h["L"], h["T"])],
+                     **{"Avg score": (h["PF"] / h["games"]).round(1), "Opp avg": (h["PA"] / h["games"]).round(1)})
+        st.dataframe(h[["Opponent", "games", "Record", "Avg score", "Opp avg"]].rename(columns={"games": "Games"}),
+                     hide_index=True, width="stretch")
+        best = h.assign(wp=h["W"] / h["games"]).sort_values(["wp", "games"], ascending=[False, False]).iloc[0]
+        worst = h.assign(wp=h["W"] / h["games"]).sort_values(["wp", "games"], ascending=[True, False]).iloc[0]
+        if best["opp"] != worst["opp"]:
+            st.caption(f"Owns {name(best['opp'])} ({best['Record']}). Toughest matchup: {name(worst['opp'])} "
+                       f"({worst['Record']}).")
+
+    # record book
+    recs = league_history.record_book(games)
+    if recs:
+        st.markdown("#### Record book")
+        out = []
+        for r in recs:
+            detail = r["detail"]
+            for rid in rids:
+                detail = detail.replace(f"{{opp:{rid}}}", name(rid))
+            when = f'{r["season"]}' + (f', Week {r["week"]}' if r["week"] else "")
+            out.append(f'<div class="lh-rec"><div class="k">{r["record"]}</div><div class="v">{r["value"]}</div>'
+                       f'<div class="t">{av(r["team"], 22)} {name(r["team"])}</div>'
+                       f'<div class="d">{detail + " · " if detail else ""}{when}</div></div>')
+        html('<div class="lh-recs">' + "".join(out) + "</div>")
+    st.caption(f"{len(games):,} regular-season games across {games['season'].nunique()} season"
+               f"{'s' if games['season'].nunique() != 1 else ''}. The current season counts weeks that are fully finished.")
+
+
+# ---------- dynasty: team outlook and draft board ----------
+YOUNG = 25          # 25 or younger counts toward a team's future
+
+
+def team_outlook():
+    """For each roster: projected starting lineup points per week (win now) and the market value of
+    players 25 or younger plus draft picks (the future). Teams are split at the league median on each."""
+    lg = league()
+    weeks = sorted(proj["week"].unique())
+    w1 = FANTASY_LAST_WEEK if FANTASY_LAST_WEEK in weeks else weeks[-1]
+    n_weeks = max(1, w1 - weeks[0] + 1)
+    ros = ros_values(weeks[0], w1, lg["teams"], scoring_name, DB_VERSION).set_index("player_id")
+    market = league_market_values()
+    args = (lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+    sleeper_by_gsis = {g: sid for sid, g in gsis_by_sleeper.items()}
+    age_sid = {str((r.get("player") or {}).get("sleeperId")): (r["player"].get("maybeAge"))
+               for r in market_rows(*args) if (r.get("player") or {}).get("sleeperId")}
+    age = lambda g: age_sid.get(sleeper_by_gsis.get(g))
+    slots = my_slots()
+    rows = []
+    for rid, t in lg["rosters"].items():
+        pl = [(i, ros.at[i, "position"], float(ros.at[i, "ros"])) for i in t["ids"] if i in ros.index]
+        now = lineup_total(pl, slots) / n_weeks
+        vals = [(market.get(i, 0.0), age(i)) for i in t["ids"]]
+        picks = sum(market.get(pick_id(*p_), 0.0) for p_ in (lg.get("picks") or {}).get(rid, []))
+        young = sum(v for v, a in vals if a is not None and a <= YOUNG)
+        aged = [(v, a) for v, a in vals if a is not None and v > 0]
+        avg_age = sum(v * a for v, a in aged) / sum(v for v, _ in aged) if aged else None
+        rows.append({"rid": rid, "team": t, "now": now, "future": young + picks, "young": young, "picks": picks,
+                     "total": sum(v for v, _ in vals) + picks, "age": avg_age})
+    df = pd.DataFrame(rows)
+    mx, my = df["now"].median(), df["future"].median()
+    df["label"] = ["Powerhouse" if n >= mx and f >= my else "Win now" if n >= mx else
+                   "Rebuilding" if f >= my else "Retool" for n, f in zip(df["now"], df["future"])]
+    return df, mx, my
+
+
+OUTLOOK_COLORS = {"Powerhouse": "#22d3b6", "Win now": "#9b6bff", "Rebuilding": "#ffb35c", "Retool": "#9aa3b8"}
+OUTLOOK_TIPS = {"Powerhouse": "Strong lineup now and a strong young core", "Win now": "Strong lineup, light on youth and picks",
+                "Rebuilding": "Weaker lineup, but young talent and picks", "Retool": "Below the league median on both"}
+
+OL_CSS = """<style>
+.ol { display: grid; gap: 4px; }
+.ol-head, .ol-row { display: grid; grid-template-columns: 30px minmax(0, 2fr) 1.1fr .9fr 1fr 1fr .7fr; align-items: center;
+  gap: 8px; padding: 9px 12px; }
+.ol-head { font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+.ol-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-size: .88rem; }
+.ol-row.mine { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.ol-team { display: flex; align-items: center; gap: 9px; font-weight: 700; min-width: 0; }
+.ol-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ol-num { font-variant-numeric: tabular-nums; }
+.ol-num small { display: block; color: var(--muted); font-size: .7rem; }
+.ol-tag { font-size: .7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; justify-self: start; }
+@media (max-width: 700px) { .ol-head { display: none; } .ol-row { grid-template-columns: 26px 1fr auto; }
+  .ol-row .ol-num { display: none; } }
+</style>"""
+
+
+def outlook_tag(label):
+    c = OUTLOOK_COLORS[label]
+    return f'<span class="ol-tag" title="{OUTLOOK_TIPS[label]}" style="background:{c}26;color:{c}">{label}</span>'
+
+
+def view_outlook():
+    intro("Team outlook", "Where every team stands now and in the future. Win now is each team's best projected lineup "
+          "per week for the rest of the season. Future is the market value of players 25 or younger plus draft picks.",
+          "Teams above the league median on both are powerhouses. Rebuilding teams are the ones that want your vets.")
+    lg = league()
+    if not lg:
+        st.info("Connect your Sleeper league in My Team.")
+        return
+    if not market_rows(lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"]):
+        st.info("Market values couldn't be loaded right now. Try again in a few minutes.")
+        return
+    df, mx, my = team_outlook()
+    fig = go.Figure()
+    fig.add_vline(x=mx, line=dict(color="rgba(163,171,189,.35)", dash="dot"))
+    fig.add_hline(y=my, line=dict(color="rgba(163,171,189,.35)", dash="dot"))
+    for lab, c in OUTLOOK_COLORS.items():
+        d = df[df["label"] == lab]
+        if len(d):
+            fig.add_trace(go.Scatter(
+                x=d["now"], y=d["future"], mode="markers+text", name=lab, text=[t["owner"] for t in d["team"]],
+                textposition="top center", textfont=dict(size=11, color="#cfd5e3"),
+                marker=dict(size=[18 if r == lg.get("my_roster_id") else 12 for r in d["rid"]], color=c,
+                            line=dict(width=[3 if r == lg.get("my_roster_id") else 0 for r in d["rid"]], color="#fff")),
+                hovertemplate="%{text}<br>Win now %{x:.1f} pts/wk<br>Future %{y:,.0f}<extra></extra>"))
+    for (x_, y_), t_ in {(1, 1): "Powerhouse", (1, 0): "Win now", (0, 1): "Rebuilding", (0, 0): "Retool"}.items():
+        fig.add_annotation(x=x_, y=y_, xref="paper", yref="paper", text=t_.upper(), showarrow=False,
+                           font=dict(size=10, color=OUTLOOK_COLORS[t_]), xanchor="right" if x_ else "left",
+                           yanchor="top" if y_ else "bottom", opacity=.8)
+    fig.update_layout(xaxis_title="Win now (projected starting lineup, pts per week)",
+                      yaxis_title="Future (young players + picks, market value)")
+    st.plotly_chart(plot_style(fig, 440), width="stretch", key="ol_chart")
+
+    df = df.sort_values("total", ascending=False).reset_index(drop=True)
+    out = ['<div class="ol-head"><span>#</span><span>Team</span><span>Window</span><span>Win now</span>'
+           '<span>Young core</span><span>Picks</span><span>Avg age</span></div>']
+    for k, r in df.iterrows():
+        mine = r["rid"] == lg.get("my_roster_id")
+        out.append(f"""<div class="ol-row {'mine' if mine else ''}"><span class="pr-rank">{k + 1}</span>
+          <span class="ol-team">{avatar_html(r['team'], 28)}<span>{r['team']['owner']}</span></span>{outlook_tag(r['label'])}
+          <span class="ol-num">{r['now']:.1f}<small>pts / wk</small></span>
+          <span class="ol-num">{r['young']:,.0f}<small>value</small></span>
+          <span class="ol-num">{r['picks']:,.0f}<small>value</small></span>
+          <span class="ol-num">{'' if pd.isna(r['age']) else f"{r['age']:.1f}"}</span></div>""")
+    st.markdown(OL_CSS, unsafe_allow_html=True)
+    html('<div class="ol">' + "".join(out) + "</div>")
+    st.caption("Ranked by total market value (all players plus picks). Average age is weighted by value, so stars "
+               "count more than bench players. Values are FantasyCalc's dynasty market.")
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def last_rookie_draft(league_id, rounds):
+    return trade_history.rookie_draft(league_id, sleeper, rounds)
+
+
+DB_CSS = """<style>
+.db-round { font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; margin: 14px 0 6px; }
+.db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+.db-pk { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+.db-pk.mine { border-color: var(--accent); background: linear-gradient(160deg, rgba(155,107,255,.16), var(--surface) 70%); }
+.db-top { display: flex; justify-content: space-between; align-items: baseline; }
+.db-no { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 1.05rem; }
+.db-val { color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.db-own { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-weight: 600; font-size: .82rem; min-width: 0; }
+.db-own span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-via { color: var(--muted); font-size: .7rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>"""
+
+
+def view_draft_board():
+    intro("Rookie draft board", "Every pick in your league's upcoming rookie drafts: who owns it, where it's projected "
+          "to land, and what it's worth on the trade market.",
+          "Next year's order is projected from the season simulation (worst projected finish picks first). "
+          "Later years show picks by original team.")
+    lg = league()
+    if not lg or not lg.get("picks"):
+        st.info("Connect your dynasty league in My Team to see the draft board.")
+        return
+    rounds = lg["pick_rounds"]
+    yr = st.segmented_control("Draft", PICK_SEASONS, default=PICK_SEASONS[0], required=True, key="db_year")
+    owner_of = {p_: rid for rid, ps in lg["picks"].items() for p_ in ps}
+    args = (lg.get("dynasty", False), lg.get("superflex", False), lg["teams"], lg["ppr"])
+    curve = fantasycalc.pick_values(market_rows(*args), lg["pick_seasons"], rounds)
+    rids = list(lg["rosters"])
+    n = len(rids)
+    if yr == PICK_SEASONS[0]:
+        with st.spinner("Projecting the final standings..."):
+            res = run_season_sim(lg["id"], scoring_name, DB_VERSION)
+        finish = dict(zip(res["rids"], res["avg_finish"]))
+        order = sorted(rids, key=lambda r: -finish.get(r, 0))       # worst projected finish picks first
+    else:
+        order = sorted(rids, key=lambda r: lg["rosters"][r]["owner"].lower())
+    tier = lambda slot: "Early" if slot <= n / 3 else ("Mid" if slot <= 2 * n / 3 else "Late")
+    mine_total, mine_list = 0.0, []
+    blocks = []
+    for rd in range(1, rounds + 1):
+        cells = []
+        for k, orig in enumerate(order, 1):
+            cur = owner_of.get((yr, rd, orig), orig)
+            v = float(curve.get((yr, rd, tier(k) if yr == PICK_SEASONS[0] else None)) or curve.get((yr, rd, None)) or 0)
+            mine = cur == lg.get("my_roster_id")
+            no = f"{rd}.{k:02d}" if yr == PICK_SEASONS[0] else f"Rd {rd}"
+            if mine:
+                mine_total += v
+                mine_list.append(no if yr == PICK_SEASONS[0] else f"{ORD.get(rd)} ({lg['rosters'][orig]['owner']})")
+            via = f"via {lg['rosters'][orig]['owner']}" if cur != orig else "own pick"
+            cells.append(f'<div class="db-pk {"mine" if mine else ""}"><div class="db-top"><span class="db-no">{no}</span>'
+                         f'<span class="db-val">{v:,.0f}</span></div><div class="db-own">{avatar_html(lg["rosters"][cur], 20)}'
+                         f'<span>{lg["rosters"][cur]["owner"]}</span></div><div class="db-via">{via}</div></div>')
+        blocks.append(f'<div class="db-round">Round {rd}</div><div class="db-grid">{"".join(cells)}</div>')
+    if mine_list:
+        st.markdown(f"You own **{len(mine_list)}** picks in the {yr} draft, worth **{mine_total:,.0f}** on the market: "
+                    + ", ".join(mine_list))
+    else:
+        st.markdown(f"You don't own any picks in the {yr} draft.")
+    st.markdown(DB_CSS, unsafe_allow_html=True)
+    html("".join(blocks))
+    st.caption("Values are FantasyCalc's dynasty market. Your league's real draft order rule (for example, playoff "
+               "teams by finish) can shift these spots.")
+
+    # how the last rookie draft has aged
+    d_season, picks_ = last_rookie_draft(lg["id"], rounds)
+    if picks_:
+        st.markdown(f"#### The {d_season} rookie draft so far")
+        pval = fantasycalc.player_values(market_rows(*args))
+        ppg = games_cur.groupby("player_id")["ppr"].mean()
+        rows_ = []
+        for p_ in picks_:
+            g = gsis_by_sleeper.get(p_["player_id"])
+            rows_.append({"Pick": p_["slot"], "": sleeper.player_photo(p_["player_id"]), "Player": p_["name"],
+                          "Pos": p_["position"], "Drafted by": lg["rosters"].get(p_["roster_id"], {}).get("owner", ""),
+                          "Value now": pval.get(p_["player_id"], 0.0),
+                          "PPG this season": float(ppg.get(g)) if g in ppg.index else None})
+        dd = pd.DataFrame(rows_)
+        dd["Value rank"] = dd["Value now"].rank(ascending=False, method="min").astype(int)
+        st.dataframe(dd, hide_index=True, width="stretch", height=min(38 * len(dd) + 40, 520), column_config={
+            "": st.column_config.ImageColumn("", width="small"),
+            "Value now": st.column_config.NumberColumn(format="%d"),
+            "PPG this season": st.column_config.NumberColumn(format="%.1f"),
+            "Value rank": st.column_config.NumberColumn(help="Where this player now ranks among everyone taken in the draft. "
+                                                        "A late pick with a high value rank was a steal.")})
 
 
 # ---------- tabs ----------
@@ -2185,8 +2510,51 @@ def view_trades():
                                                "team's current record." if dyn else ""))
 
 
+def render_benchmark():
+    """Head-to-head against Sleeper's own projections, on the same player-games."""
+    bm = metrics.get("sleeper_benchmark") or {}
+    summ = pd.DataFrame(bm.get("summary") or [])
+    st.markdown("#### Head to head: Red Zone Lab vs Sleeper")
+    if summ.empty:
+        st.info("The head-to-head test against Sleeper's projections runs with the next data update.")
+        return
+    overall = summ[summ["position"] == "ALL"].sort_values("season", ascending=False)
+    cols = st.columns(len(overall))
+    for col, r in zip(cols, overall.itertuples()):
+        diff = (r.sleeper_mae - r.our_mae) / r.sleeper_mae * 100
+        label = f"{r.season} season" + (" (holdout)" if r.season < season else " so far")
+        col.metric(label, f"{r.our_mae:.2f} vs {r.sleeper_mae:.2f}",
+                   f"{diff:+.1f}% accuracy vs Sleeper",
+                   help=f"Average miss per player-game: ours vs Sleeper's, on {r.games:,} games both projected. "
+                        f"Ours was closer in {r.closer_pct:.0%} of them.")
+    weekly = pd.DataFrame(bm.get("weekly") or [])
+    cur = weekly[weekly["season"] == season] if len(weekly) else weekly
+    if len(cur) >= 2:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=cur["week"], y=cur["our_mae"], name="Red Zone Lab", mode="lines+markers",
+                                 line=dict(color=ACCENT, width=3)))
+        fig.add_trace(go.Scatter(x=cur["week"], y=cur["sleeper_mae"], name="Sleeper", mode="lines+markers",
+                                 line=dict(color="#9aa3b8", width=3, dash="dot")))
+        fig.update_layout(xaxis=dict(dtick=1, title="Week"), yaxis_title="Average miss (pts)")
+        st.plotly_chart(plot_style(fig, 300), width="stretch", key="bm_chart")
+    t = summ.rename(columns={"season": "Season", "position": "Pos", "games": "Games", "our_mae": "Red Zone Lab",
+                             "sleeper_mae": "Sleeper", "blend_mae": "Average of both", "closer_pct": "Ours closer"})
+    t["Pos"] = t["Pos"].replace({"ALL": "All"})
+    st.dataframe(t.sort_values(["Season", "Games"], ascending=[False, False]), hide_index=True, width="stretch",
+                 column_config={"Season": st.column_config.NumberColumn(format="%d"),
+                                "Red Zone Lab": st.column_config.NumberColumn(format="%.2f", help="Average miss in PPR points"),
+                                "Sleeper": st.column_config.NumberColumn(format="%.2f", help="Average miss in PPR points"),
+                                "Average of both": st.column_config.NumberColumn(
+                                    format="%.2f", help="Averaging the two projections. Often beats either one alone."),
+                                "Ours closer": st.column_config.NumberColumn(format="percent")})
+    st.caption("Sleeper's projections come from Rotowire. Both are scored on the exact same player-games (recent form "
+               "of 6+ points) against actual full-PPR points. Last season is a true holdout: the model never trained on it.")
+    st.divider()
+
+
 def view_accuracy():
-    intro("Accuracy", "Projections compared with what actually happened, week by week.", "Pick a week to see the best calls and the biggest misses.")
+    intro("Accuracy", "Projections compared with what actually happened, week by week, and with Sleeper's own projections.", "Pick a week to see the best calls and the biggest misses.")
+    render_benchmark()
     if acc.empty:
         st.info("No scored weeks yet. Accuracy appears here once games are played.")
     else:
@@ -2320,7 +2688,21 @@ if section == "My Team":
 if section == "League":
     section_header("League")
     st.session_state["_nested"] = True
-    view_league()
+    lg_views = ["Power rankings", "History"]
+    if league() and league().get("dynasty"):
+        lg_views += ["Team outlook", "Draft board"]
+    st.session_state.setdefault("lg_view", "Power rankings")
+    if st.session_state["lg_view"] not in lg_views:
+        st.session_state["lg_view"] = "Power rankings"
+    view = st.segmented_control("View", lg_views, required=True, key="lg_view", label_visibility="collapsed")
+    if view == "Power rankings":
+        view_league()
+    elif view == "History":
+        view_history()
+    elif view == "Team outlook":
+        view_outlook()
+    else:
+        view_draft_board()
 if section == "Rankings":
     section_header("Rankings")
     st.session_state["_nested"] = True

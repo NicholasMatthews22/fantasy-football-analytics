@@ -132,3 +132,8 @@ def player_photo(sleeper_id):
     if sid.isalpha():
         return f"https://sleepercdn.com/images/team_logos/nfl/{sid.lower()}.png"
     return f"https://sleepercdn.com/content/nfl/players/thumb/{sid}.jpg"
+
+
+def winners_bracket(league_id):
+    """Playoff bracket: rounds of {r, m, t1, t2, w, l, p}; the match with p == 1 is the title game."""
+    return _get(f"/league/{league_id}/winners_bracket") or []

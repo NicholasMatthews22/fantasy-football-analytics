@@ -121,3 +121,28 @@ def collect(league_id, api, rounds=5):
             teams[int(r["roster_id"])] = {"owner": api.team_name(u) if u else f"Team {r['roster_id']}",
                                           "avatar": api.avatar_url(u) if u else None}
     return trades, teams
+
+
+def rookie_draft(league_id, api, rounds=5):
+    """The league's most recent rookie draft: (season, [pick dicts with who made the pick])."""
+    for season, lg in league_chain(league_id, api)[:2]:
+        ds = [d for d in _safe(api.drafts, lg["league_id"]) if d.get("status") == "complete"
+              and int((d.get("settings") or {}).get("rounds", 0)) <= 10]
+        if not ds:
+            continue
+        ds.sort(key=lambda d: (int((d.get("settings") or {}).get("rounds", 0)) != rounds, -(d.get("start_time") or 0)))
+        d = api.draft(ds[0]["draft_id"]) or ds[0]
+        n = len(d.get("slot_to_roster_id") or {}) or 1
+        out = []
+        for p in sorted(_safe(api.draft_picks, ds[0]["draft_id"]), key=lambda p: int(p.get("pick_no", 0))):
+            if not p.get("player_id"):
+                continue
+            meta = p.get("metadata") or {}
+            out.append({"pick_no": int(p["pick_no"]), "round": int(p["round"]),
+                        "slot": f"{p['round']}.{(int(p['pick_no']) - 1) % n + 1:02d}",
+                        "roster_id": p.get("roster_id"), "player_id": str(p["player_id"]),
+                        "name": f"{meta.get('first_name', '')} {meta.get('last_name', '')}".strip(),
+                        "position": meta.get("position"), "team": meta.get("team")})
+        if out:
+            return int(d.get("season") or season), out
+    return None, []
