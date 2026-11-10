@@ -4,170 +4,174 @@
       {
         "position": "ALL",
         "games": 3129,
-        "model_mae": 5.77,
+        "model_mae": 5.78,
         "baseline_mae": 5.98,
-        "range_hit_rate": 0.689,
-        "rank_corr": 0.474
+        "range_hit_rate": 0.684,
+        "rank_corr": 0.473
       },
       {
         "position": "QB",
         "games": 581,
-        "model_mae": 6.61,
+        "model_mae": 6.63,
         "baseline_mae": 6.9,
-        "range_hit_rate": 0.654,
-        "rank_corr": 0.397
+        "range_hit_rate": 0.642,
+        "rank_corr": 0.394
       },
       {
         "position": "RB",
         "games": 798,
         "model_mae": 5.87,
         "baseline_mae": 6.05,
-        "range_hit_rate": 0.675,
-        "rank_corr": 0.47
+        "range_hit_rate": 0.667,
+        "rank_corr": 0.474
       },
       {
         "position": "WR",
         "games": 1235,
         "model_mae": 5.59,
         "baseline_mae": 5.76,
-        "range_hit_rate": 0.72,
-        "rank_corr": 0.451
+        "range_hit_rate": 0.721,
+        "rank_corr": 0.447
       },
       {
         "position": "TE",
         "games": 515,
         "model_mae": 5.11,
         "baseline_mae": 5.34,
-        "range_hit_rate": 0.674,
-        "rank_corr": 0.283
+        "range_hit_rate": 0.67,
+        "rank_corr": 0.275
       }
     ],
     "2026 season so far": [
       {
         "position": "ALL",
-        "games": 1557,
-        "model_mae": 5.78,
-        "baseline_mae": 5.97,
-        "range_hit_rate": 0.701,
+        "games": 1570,
+        "model_mae": 5.77,
+        "baseline_mae": 5.96,
+        "range_hit_rate": 0.696,
         "rank_corr": 0.492
       },
       {
         "position": "QB",
-        "games": 287,
-        "model_mae": 6.34,
-        "baseline_mae": 6.45,
-        "range_hit_rate": 0.739,
-        "rank_corr": 0.424
+        "games": 289,
+        "model_mae": 6.33,
+        "baseline_mae": 6.49,
+        "range_hit_rate": 0.73,
+        "rank_corr": 0.428
       },
       {
         "position": "RB",
-        "games": 397,
+        "games": 401,
         "model_mae": 5.82,
-        "baseline_mae": 6.03,
-        "range_hit_rate": 0.695,
-        "rank_corr": 0.489
+        "baseline_mae": 6.0,
+        "range_hit_rate": 0.683,
+        "rank_corr": 0.488
       },
       {
         "position": "WR",
-        "games": 589,
-        "model_mae": 5.71,
-        "baseline_mae": 5.89,
-        "range_hit_rate": 0.699,
-        "rank_corr": 0.467
+        "games": 594,
+        "model_mae": 5.7,
+        "baseline_mae": 5.87,
+        "range_hit_rate": 0.697,
+        "rank_corr": 0.466
       },
       {
         "position": "TE",
-        "games": 284,
-        "model_mae": 5.31,
-        "baseline_mae": 5.57,
-        "range_hit_rate": 0.673,
-        "rank_corr": 0.311
+        "games": 286,
+        "model_mae": 5.28,
+        "baseline_mae": 5.56,
+        "range_hit_rate": 0.675,
+        "rank_corr": 0.312
       }
     ]
   },
   "importance": [
     {
       "feature": "ewm_ppr",
-      "importance": 1.349
+      "importance": 1.342
     },
     {
       "feature": "season_avg_ppr",
-      "importance": 0.194
-    },
-    {
-      "feature": "ewm_opportunities",
-      "importance": 0.07
-    },
-    {
-      "feature": "l3_opportunities",
-      "importance": 0.06
+      "importance": 0.201
     },
     {
       "feature": "implied_total",
-      "importance": 0.059
+      "importance": 0.092
     },
     {
-      "feature": "ewm_passing_yards",
-      "importance": 0.043
+      "feature": "l3_opportunities",
+      "importance": 0.086
     },
     {
-      "feature": "ewm_target_share",
-      "importance": 0.043
-    },
-    {
-      "feature": "ewm_attempts",
-      "importance": 0.04
-    },
-    {
-      "feature": "ewm_carry_share",
-      "importance": 0.029
-    },
-    {
-      "feature": "ewm_total_tds",
-      "importance": 0.026
-    },
-    {
-      "feature": "def_factor",
-      "importance": 0.019
-    },
-    {
-      "feature": "l3_ppr",
-      "importance": 0.016
+      "feature": "ewm_opportunities",
+      "importance": 0.05
     },
     {
       "feature": "ewm_wopr",
-      "importance": 0.015
+      "importance": 0.045
+    },
+    {
+      "feature": "ewm_target_share",
+      "importance": 0.044
+    },
+    {
+      "feature": "ewm_carry_share",
+      "importance": 0.043
+    },
+    {
+      "feature": "ewm_passing_yards",
+      "importance": 0.038
+    },
+    {
+      "feature": "ewm_attempts",
+      "importance": 0.038
+    },
+    {
+      "feature": "def_factor",
+      "importance": 0.029
+    },
+    {
+      "feature": "l3_ppr",
+      "importance": 0.026
+    },
+    {
+      "feature": "ewm_total_tds",
+      "importance": 0.024
+    },
+    {
+      "feature": "ewm_targets",
+      "importance": 0.016
+    },
+    {
+      "feature": "ewm_air_yards_share",
+      "importance": 0.014
+    },
+    {
+      "feature": "ewm_receptions",
+      "importance": 0.014
     },
     {
       "feature": "games_played",
       "importance": 0.013
     },
     {
-      "feature": "ewm_receptions",
-      "importance": 0.009
-    },
-    {
-      "feature": "ewm_targets",
-      "importance": 0.008
+      "feature": "ewm_rushing_yards",
+      "importance": 0.012
     },
     {
       "feature": "ewm_receiving_air_yards",
-      "importance": 0.008
-    },
-    {
-      "feature": "ewm_air_yards_share",
-      "importance": 0.005
-    },
-    {
-      "feature": "home",
-      "importance": 0.004
-    },
-    {
-      "feature": "ewm_rushing_yards",
-      "importance": 0.004
+      "importance": 0.01
     },
     {
       "feature": "spread",
+      "importance": 0.007
+    },
+    {
+      "feature": "home",
+      "importance": 0.005
+    },
+    {
+      "feature": "pos_code",
       "importance": 0.004
     },
     {
@@ -176,14 +180,10 @@
     },
     {
       "feature": "ewm_receiving_yards",
-      "importance": 0.003
-    },
-    {
-      "feature": "pos_code",
-      "importance": 0.002
+      "importance": 0.0
     }
   ],
-  "train_rows": 31167,
+  "train_rows": 31190,
   "kdst": {
     "K": {
       "model_mae": 3.84,
@@ -196,7 +196,7 @@
       "games": 544
     }
   },
-  "updated_at": "Nov 9, 4:54 PM ET",
+  "updated_at": "Nov 10, 2:00 PM ET",
   "sleeper_benchmark": {
     "summary": [
       {
@@ -206,25 +206,25 @@
         "our_mae": 5.71,
         "sleeper_mae": 5.65,
         "blend_mae": 5.57,
-        "closer_pct": 0.482
+        "closer_pct": 0.478
       },
       {
         "season": 2025,
         "position": "QB",
         "games": 515,
-        "our_mae": 6.33,
+        "our_mae": 6.34,
         "sleeper_mae": 6.86,
         "blend_mae": 6.31,
-        "closer_pct": 0.565
+        "closer_pct": 0.559
       },
       {
         "season": 2025,
         "position": "RB",
         "games": 792,
-        "our_mae": 5.87,
+        "our_mae": 5.86,
         "sleeper_mae": 5.66,
         "blend_mae": 5.65,
-        "closer_pct": 0.46
+        "closer_pct": 0.452
       },
       {
         "season": 2025,
@@ -233,7 +233,7 @@
         "our_mae": 5.6,
         "sleeper_mae": 5.46,
         "blend_mae": 5.46,
-        "closer_pct": 0.472
+        "closer_pct": 0.467
       },
       {
         "season": 2025,
@@ -242,52 +242,52 @@
         "our_mae": 5.11,
         "sleeper_mae": 4.91,
         "blend_mae": 4.94,
-        "closer_pct": 0.458
+        "closer_pct": 0.466
       },
       {
         "season": 2026,
         "position": "ALL",
-        "games": 1203,
-        "our_mae": 5.86,
-        "sleeper_mae": 5.71,
-        "blend_mae": 5.72,
-        "closer_pct": 0.467
+        "games": 1359,
+        "our_mae": 5.77,
+        "sleeper_mae": 5.68,
+        "blend_mae": 5.67,
+        "closer_pct": 0.478
       },
       {
         "season": 2026,
         "position": "QB",
-        "games": 206,
-        "our_mae": 6.31,
-        "sleeper_mae": 6.22,
-        "blend_mae": 6.22,
-        "closer_pct": 0.471
+        "games": 232,
+        "our_mae": 6.26,
+        "sleeper_mae": 6.3,
+        "blend_mae": 6.24,
+        "closer_pct": 0.5
       },
       {
         "season": 2026,
         "position": "RB",
-        "games": 309,
-        "our_mae": 6.04,
-        "sleeper_mae": 5.66,
-        "blend_mae": 5.77,
-        "closer_pct": 0.43
+        "games": 352,
+        "our_mae": 5.89,
+        "sleeper_mae": 5.62,
+        "blend_mae": 5.68,
+        "closer_pct": 0.46
       },
       {
         "season": 2026,
         "position": "WR",
-        "games": 461,
-        "our_mae": 5.78,
-        "sleeper_mae": 5.71,
-        "blend_mae": 5.68,
-        "closer_pct": 0.479
+        "games": 517,
+        "our_mae": 5.73,
+        "sleeper_mae": 5.7,
+        "blend_mae": 5.65,
+        "closer_pct": 0.482
       },
       {
         "season": 2026,
         "position": "TE",
-        "games": 227,
-        "our_mae": 5.37,
-        "sleeper_mae": 5.3,
-        "blend_mae": 5.3,
-        "closer_pct": 0.489
+        "games": 258,
+        "our_mae": 5.26,
+        "sleeper_mae": 5.16,
+        "blend_mae": 5.17,
+        "closer_pct": 0.477
       }
     ],
     "weekly": [
@@ -309,7 +309,7 @@
         "season": 2025,
         "week": 3,
         "games": 189,
-        "our_mae": 5.21,
+        "our_mae": 5.17,
         "sleeper_mae": 5.47
       },
       {
@@ -330,14 +330,14 @@
         "season": 2025,
         "week": 6,
         "games": 166,
-        "our_mae": 5.69,
+        "our_mae": 5.74,
         "sleeper_mae": 5.59
       },
       {
         "season": 2025,
         "week": 7,
         "games": 167,
-        "our_mae": 6.35,
+        "our_mae": 6.42,
         "sleeper_mae": 6.57
       },
       {
@@ -351,21 +351,21 @@
         "season": 2025,
         "week": 9,
         "games": 161,
-        "our_mae": 5.6,
+        "our_mae": 5.59,
         "sleeper_mae": 5.43
       },
       {
         "season": 2025,
         "week": 10,
         "games": 156,
-        "our_mae": 5.98,
+        "our_mae": 5.99,
         "sleeper_mae": 5.85
       },
       {
         "season": 2025,
         "week": 11,
         "games": 167,
-        "our_mae": 5.79,
+        "our_mae": 5.78,
         "sleeper_mae": 6.02
       },
       {
@@ -379,42 +379,42 @@
         "season": 2025,
         "week": 13,
         "games": 187,
-        "our_mae": 5.16,
+        "our_mae": 5.14,
         "sleeper_mae": 5.23
       },
       {
         "season": 2025,
         "week": 14,
         "games": 161,
-        "our_mae": 5.44,
+        "our_mae": 5.41,
         "sleeper_mae": 5.53
       },
       {
         "season": 2025,
         "week": 15,
         "games": 176,
-        "our_mae": 6.06,
+        "our_mae": 6.04,
         "sleeper_mae": 6.04
       },
       {
         "season": 2025,
         "week": 16,
         "games": 182,
-        "our_mae": 6.12,
+        "our_mae": 6.13,
         "sleeper_mae": 6.02
       },
       {
         "season": 2025,
         "week": 17,
         "games": 166,
-        "our_mae": 5.98,
+        "our_mae": 6.0,
         "sleeper_mae": 6.01
       },
       {
         "season": 2025,
         "week": 18,
         "games": 145,
-        "our_mae": 5.59,
+        "our_mae": 5.57,
         "sleeper_mae": 5.8
       },
       {
@@ -472,6 +472,13 @@
         "games": 147,
         "our_mae": 6.03,
         "sleeper_mae": 5.87
+      },
+      {
+        "season": 2026,
+        "week": 9,
+        "games": 156,
+        "our_mae": 5.1,
+        "sleeper_mae": 5.46
       }
     ]
   }
